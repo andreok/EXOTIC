@@ -40,7 +40,10 @@ from astropy import units as u
 from copy import deepcopy
 from itertools import cycle
 import matplotlib.pyplot as plt
-import numpy as np
+try:
+    import cupy as np
+except ImportError:
+    import numpy as np
 from pylightcurve.models.exoplanet_lc import eclipse_mid_time, transit_flux_drop
 from scipy import stats
 try:
