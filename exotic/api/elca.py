@@ -43,7 +43,10 @@ from astropy.time import Time
 import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
-import numpy as np
+try:
+    import cupy as np
+except ImportError:
+    import numpy as np
 from pylightcurve.models.exoplanet_lc import transit as pytransit
 from scipy import spatial
 from scipy.optimize import least_squares
