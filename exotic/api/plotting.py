@@ -47,7 +47,10 @@ import json
 import logging
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, NullLocator, ScalarFormatter
-import numpy as np
+try:
+    import cupy as np
+except ImportError:
+    import numpy as np
 from pprint import pprint
 from scipy.interpolate import griddata
 from scipy.ndimage import label, gaussian_filter
