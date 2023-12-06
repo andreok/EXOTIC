@@ -36,10 +36,7 @@
 #    # NOTE: See companion file version.py for version info.
 # ########################################################################### #
 import json
-try:
-    import cupy as np
-except ImportError:
-    import numpy as np
+import numpy as np
 import os
 import urllib
 
