@@ -40,6 +40,7 @@ from astropy import units as u
 from copy import deepcopy
 from itertools import cycle
 import matplotlib.pyplot as plt
+from numba import jit
 try:
     if 'np' in globals():
         del globals()['np']
@@ -148,6 +149,7 @@ def eclipse(times, values):
                     tme, times, method='quad', precision=3)
     return model + values['fpfs']*values['rprs']**2 # second part is eclipse depth
 
+@jit(nopython=True)
 def get_phase(times, per, tmid):
     return (times - tmid + 0.25 * per) / per % 1 - 0.25
 
