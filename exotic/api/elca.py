@@ -178,6 +178,7 @@ class lc_fitter(object):
             self.fit_nested()
 
     def fit_LM(self):
+        print('starting fit_LM()')
         freekeys = list(self.bounds.keys())
         boundarray = np.array([self.bounds[k] for k in freekeys])
 
@@ -236,6 +237,7 @@ class lc_fitter(object):
         self.create_fit_variables()
 
     def create_fit_variables(self):
+        print('starting create_fit_variables()')
         self.phase = get_phase(self.time, self.parameters['per'], self.parameters['tmid'])
         self.transit = transit(self.time, self.parameters)
         self.time_upsample = np.linspace(min(self.time), max(self.time), 1000)
@@ -285,6 +287,7 @@ class lc_fitter(object):
         self.duration_expected = newdur
 
     def fit_nested(self):
+        print('starting fit_nested()')
         freekeys = list(self.bounds.keys())
         boundarray = np.array([self.bounds[k] for k in freekeys])
         bounddiff = np.diff(boundarray, 1).reshape(-1)
@@ -299,11 +302,11 @@ class lc_fitter(object):
             for i in range(len(pars)):
                 self.prior[freekeys[i]] = pars[i]
             model = transit(self.time, self.prior)
-            print(type(model))
-            print(type(self.prior['a2']))
-            print(type(self.airmass))
-            print(type(self.data))
-            print(type(self.dataerr))
+            #print(type(model))
+            #print(type(self.prior['a2']))
+            #print(type(self.airmass))
+            #print(type(self.data))
+            #print(type(self.dataerr))
             try:
                 model = np.array(model) * np.exp(self.prior['a2'].item() * np.array(self.airmass))
                 detrend = np.array(self.data) / model  # used to estimate a1
@@ -324,20 +327,25 @@ class lc_fitter(object):
 
         try:
             self.ns_type = 'ultranest'
+            print('starting ultranest')
             test = ReactiveNestedSampler(freekeys, loglike, prior_transform)
 
+            print('running ultranest')
             noop = lambda *args, **kwargs: None
             if self.verbose is True:
                 self.results = test.run(max_ncalls=int(self.max_ncalls))
             else:
                 self.results = test.run(max_ncalls=int(self.max_ncalls), show_status=False, viz_callback=noop)
+            print('done ultranest')
 
+            print('starting the freekeys')
             for i, key in enumerate(freekeys):
                 self.parameters[key] = self.results['maximum_likelihood']['point'][i]
                 self.errors[key] = self.results['posterior']['stdev'][i]
                 self.quantiles[key] = [
                     self.results['posterior']['errlo'][i],
                     self.results['posterior']['errup'][i]]
+            print('done the freekeys')
         except NameError:
             self.ns_type = 'dynesty'
             dsampler = dynesty.DynamicNestedSampler(loglike, prior_transform, ndim=len(freekeys),
