@@ -302,10 +302,18 @@ class lc_fitter(object):
             print(type(model))
             print(type(self.prior['a2']))
             print(type(self.airmass))
-            model *= np.exp(self.prior['a2'] * self.airmass)
-            detrend = self.data / model  # used to estimate a1
-            model *= np.median(detrend)
-            return -0.5 * np.sum(((self.data - model) / self.dataerr) ** 2)
+            print(type(self.data))
+            print(type(self.dataerr))
+            try:
+                model = np.array(model) * np.exp(self.prior['a2'].item() * np.array(self.airmass))
+                detrend = np.array(self.data) / model  # used to estimate a1
+                model *= np.median(detrend)
+                return -0.5 * np.sum(((np.array(self.data) - model) / np.array(self.dataerr)) ** 2)
+            except AttributeError:
+                model *= np.exp(self.prior['a2'] * self.airmass)
+                detrend = self.data / model  # used to estimate a1
+                model *= np.median(detrend)
+                return -0.5 * np.sum(((self.data - model) / self.dataerr) ** 2)
 
         def prior_transform(upars):
             # transform unit cube to prior volume
