@@ -97,10 +97,12 @@ def transit(times, values):
 
 
 def get_phase(times, per, tmid):
+    print('starting get_phase()')
     return (times - tmid + 0.25 * per) / per % 1 - 0.25
 
 
 def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
+    print('starting mc_a1()')
     a2 = np.random.normal(m_a2, sig_a2, n)
     model = transit * np.exp(np.repeat(np.expand_dims(a2, 0), airmass.shape[0], 0).T * airmass)
     detrend = data / model
@@ -239,8 +241,12 @@ class lc_fitter(object):
     def create_fit_variables(self):
         print('starting create_fit_variables()')
         self.phase = get_phase(self.time, self.parameters['per'], self.parameters['tmid'])
+        print(type(self.time))
+        print(type(self.parameters))
         self.transit = transit(self.time, self.parameters)
         self.time_upsample = np.linspace(min(self.time), max(self.time), 1000)
+        print(type(self.time_upsample))
+        print(type(self.parameters))
         self.transit_upsample = transit(self.time_upsample, self.parameters)
         self.phase_upsample = get_phase(self.time_upsample, self.parameters['per'], self.parameters['tmid'])
         if self.mode == "ns":
