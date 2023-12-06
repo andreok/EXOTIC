@@ -376,7 +376,7 @@ class rv_fitter(lc_fitter):
                 rf"$ecc$ = {self.parameters['ecc']:.4f} $\pm$ {self.errors['ecc']:.4f}" + "\n" \
                 rf"$\omega$ = {self.parameters['omega']:.2f} $\pm$ {self.errors['omega']:.2f}" + "\n" \
                 rf"$M_p$ = {self.parameters['mplanet']:.4f} $\pm$ {self.errors['mplanet']:.4f}"+r"$M_{Jup}$"
-        except: # in case the orbit is circular
+        except KeyError: # in case the orbit is circular
             label = rf"$K$ = {self.K:.2f} m/s" + "\n" \
                 rf"$P$ = {self.parameters['per']:.4f} $\pm$ {self.errors['per']:.2e}" + "\n" \
                 rf"$ecc$ = {self.data[0]['priors']['ecc']:.4f} $\pm$ {0.0000:.4f}" + "\n" \
