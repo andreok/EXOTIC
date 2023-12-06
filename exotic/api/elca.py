@@ -43,6 +43,7 @@ from astropy.time import Time
 import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
+from numba import jit
 try:
     if 'np' in globals():
         del globals()['np']
@@ -67,10 +68,11 @@ except ImportError:
     from .plotting import corner
 
 
+@jit(nopython=True)
 def weightedflux(flux, gw, nearest):
     return np.sum(flux[nearest] * gw, axis=-1)
 
-
+@jit(nopython=True)
 def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000):
     Xm = (X - np.median(X, 0)) * w
     kdtree = spatial.cKDTree(Xm * feature_scale)
@@ -89,18 +91,19 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000):
 
 
 def transit(times, values):
+    print('starting transit()')
     model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, method='claret', precision=3)
     return model
 
-
+@jit(nopython=True)
 def get_phase(times, per, tmid):
     print('starting get_phase()')
     return (times - tmid + 0.25 * per) / per % 1 - 0.25
 
-
+@jit(nopython=True)
 def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
     print('starting mc_a1()')
     a2 = np.random.normal(m_a2, sig_a2, n)
@@ -108,7 +111,7 @@ def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
     detrend = data / model
     return np.mean(np.median(detrend, 0)), np.std(np.median(detrend, 0))
 
-
+@jit(nopython=True)
 def round_to_2(*args):
     x = args[0]
     if len(args) == 1:
@@ -124,7 +127,7 @@ def round_to_2(*args):
             roundval = 1
     return round(x, roundval)
 
-
+@jit(nopython=True)
 # average data into bins of dt from start to finish
 def time_bin(time, flux, dt=1. / (60 * 24)):
     bins = int(np.floor((max(time) - min(time)) / dt))
@@ -140,7 +143,7 @@ def time_bin(time, flux, dt=1. / (60 * 24)):
     zmask = (bflux == 0) | (btime == 0) | np.isnan(bflux) | np.isnan(btime)
     return btime[~zmask], bflux[~zmask], bstds[~zmask]
 
-
+@jit(nopython=True)
 # Function that bins an array
 def binner(arr, n, err=''):
     if len(err) == 0:
