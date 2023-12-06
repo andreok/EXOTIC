@@ -308,7 +308,7 @@ class lc_fitter(object):
                 model = np.array(model) * np.exp(self.prior['a2'].item() * np.array(self.airmass))
                 detrend = np.array(self.data) / model  # used to estimate a1
                 model *= np.median(detrend)
-                return -0.5 * np.sum(((np.array(self.data) - model) / np.array(self.dataerr)) ** 2)
+                return -0.5 * np.sum(((np.array(self.data) - model) / np.array(self.dataerr)) ** 2).item()
             except AttributeError:
                 model *= np.exp(self.prior['a2'] * self.airmass)
                 detrend = self.data / model  # used to estimate a1
