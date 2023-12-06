@@ -41,10 +41,7 @@ import copy
 from itertools import cycle
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-try:
-    import cupy as np
-except ImportError:
-    import numpy as np
+import numpy as np
 try:
     from ultranest import ReactiveNestedSampler
 except ImportError:
