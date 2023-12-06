@@ -67,7 +67,6 @@ Msun = const.M_sun.to(u.kg).value
 Rsun = const.R_sun.to(u.m).value
 Grav = const.G.to(u.m**3/u.kg/u.day**2).value
 
-@jit
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
@@ -213,7 +212,6 @@ class rv_fitter(lc_fitter):
         def prior_transform(upars):
             return (boundarray[:,0] + bounddiff*upars)
 
-        @jit
         def loglike(pars):
             chi2 = 0
 
