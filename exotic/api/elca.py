@@ -247,21 +247,40 @@ class lc_fitter(object):
         self.time_upsample = np.linspace(min(self.time), max(self.time), 1000)
         print(type(self.time_upsample))
         print(type(self.parameters))
-        self.transit_upsample = transit(self.time_upsample, self.parameters)
-        self.phase_upsample = get_phase(self.time_upsample, self.parameters['per'], self.parameters['tmid'])
+        try:
+            self.transit_upsample = transit(np.asnumpy(self.time_upsample), self.parameters)
+            self.phase_upsample = get_phase(np.asnumpy(self.time_upsample), self.parameters['per'], self.parameters['tmid'])
+        except AttributeError:
+            self.transit_upsample = transit(self.time_upsample, self.parameters)
+            self.phase_upsample = get_phase(self.time_upsample, self.parameters['per'], self.parameters['tmid'])
         if self.mode == "ns":
             self.parameters['a1'], self.errors['a1'] = mc_a1(self.parameters.get('a2', 0), self.errors.get('a2', 1e-6),
                                                              self.transit, self.airmass, self.data)
+        print(type(self.airmass))
         if np.ndim(self.airmass) == 2:
+            print(type(self.data))
+            print(type(self.transit))
             detrended = self.data / self.transit
+            print(type(detrended))
+            print(type(self.gw))
+            print(type(self.nearest))
             self.wf = weightedflux(detrended, self.gw, self.nearest)
+            print(type(self.wf))
             self.model = self.transit * self.wf
             self.detrended = self.data / self.wf
+            print(type(self.dataerr))
             self.detrendederr = self.dataerr / self.wf
         else:
+            print(type(self.parameters['a1']))
+            print(type(self.parameters.get('a2', 0)))
+            print(type(self.airmass))
             self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * self.airmass)
+            print(type(self.airmass_model))
+            print(type(self.transit))
             self.model = self.transit * self.airmass_model
+            print(type(self.data))
             self.detrended = self.data / self.airmass_model
+            print(type(self.dataerr))
             self.detrendederr = self.dataerr / self.airmass_model
 
         self.residuals = self.data - self.model
