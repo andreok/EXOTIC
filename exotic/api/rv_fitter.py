@@ -41,7 +41,7 @@ import copy
 from itertools import cycle
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from mumba import jit
+from numba import jit
 try:
     if 'np' in globals():
         del globals()['np']
