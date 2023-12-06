@@ -48,6 +48,7 @@ import logging
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, NullLocator, ScalarFormatter
 try:
+    del np
     import cupy as np
 except ImportError:
     import numpy as np
