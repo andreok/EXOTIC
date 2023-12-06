@@ -91,7 +91,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000):
 
 
 def transit(times, values):
-    print('starting transit()')
+    #print('starting transit()')
     model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
@@ -103,7 +103,6 @@ def get_phase(times, per, tmid):
     print('starting get_phase()')
     return (times - tmid + 0.25 * per) / per % 1 - 0.25
 
-@jit(nopython=True)
 def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
     print('starting mc_a1()')
     a2 = np.random.normal(m_a2, sig_a2, n)
