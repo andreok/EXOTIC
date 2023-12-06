@@ -299,6 +299,9 @@ class lc_fitter(object):
             for i in range(len(pars)):
                 self.prior[freekeys[i]] = pars[i]
             model = transit(self.time, self.prior)
+            print(type(model))
+            print(type(self.prior['a2']))
+            print(type(self.airmass))
             model *= np.exp(self.prior['a2'] * self.airmass)
             detrend = self.data / model  # used to estimate a1
             model *= np.median(detrend)
