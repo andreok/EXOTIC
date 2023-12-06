@@ -370,10 +370,17 @@ class rv_fitter(lc_fitter):
         nphase = (self.allphase+0.5)%1-0.5
         si = np.argsort(nphase)
 
-        label = rf"$K$ = {self.K:.2f} m/s" + "\n" \
+        try:
+          label = rf"$K$ = {self.K:.2f} m/s" + "\n" \
                 rf"$P$ = {self.parameters['per']:.4f} $\pm$ {self.errors['per']:.2e}" + "\n" \
                 rf"$ecc$ = {self.parameters['ecc']:.4f} $\pm$ {self.errors['ecc']:.4f}" + "\n" \
                 rf"$\omega$ = {self.parameters['omega']:.2f} $\pm$ {self.errors['omega']:.2f}" + "\n" \
+                rf"$M_p$ = {self.parameters['mplanet']:.4f} $\pm$ {self.errors['mplanet']:.4f}"+r"$M_{Jup}$"
+        except: # in case the orbit is circular
+          label = rf"$K$ = {self.K:.2f} m/s" + "\n" \
+                rf"$P$ = {self.parameters['per']:.4f} $\pm$ {self.errors['per']:.2e}" + "\n" \
+                rf"$ecc$ = {self.data[0]['priors']['ecc']:.4f} $\pm$ {0.0000:.4f}" + "\n" \
+                rf"$\omega$ = {self.data[0]['priors']['omega']:.2f} $\pm$ {0.00:.2f}" + "\n" \
                 rf"$M_p$ = {self.parameters['mplanet']:.4f} $\pm$ {self.errors['mplanet']:.4f}"+r"$M_{Jup}$"
 
         ax[1].plot(nphase[si], self.allmodel[si], 'k-', label=label)
