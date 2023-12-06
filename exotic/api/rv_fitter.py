@@ -41,6 +41,7 @@ import copy
 from itertools import cycle
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from mumba import jit
 try:
     if 'np' in globals():
         del globals()['np']
@@ -66,6 +67,7 @@ Msun = const.M_sun.to(u.kg).value
 Rsun = const.R_sun.to(u.m).value
 Grav = const.G.to(u.m**3/u.kg/u.day**2).value
 
+@jit(nopython=True)
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
@@ -138,6 +140,7 @@ def acceleration_model(time, params, dt=0.0001):
     v2 = rv_model(time+dt, params, dt=dt)
     return (v2-v1)/dt # m/s^2
 
+@jit(nopython=True)
 def timetrans_to_timeperi(tc, per, ecc, omega):
     """
     Convert Time of Transit to Time of Periastron Passage - from RADVEL
