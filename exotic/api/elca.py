@@ -44,6 +44,7 @@ import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
 try:
+    del np
     import cupy as np
 except ImportError:
     import numpy as np
