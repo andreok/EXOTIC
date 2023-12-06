@@ -306,7 +306,10 @@ class lc_fitter(object):
 
         def prior_transform(upars):
             # transform unit cube to prior volume
-            return boundarray[:, 0] + bounddiff * upars
+            try:
+                return np.asnumpy(boundarray[:,0] + bounddiff*np.array(upars))
+            except AttributeError:
+                return boundarray[:, 0] + bounddiff * upars
 
         try:
             self.ns_type = 'ultranest'
