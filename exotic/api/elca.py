@@ -117,7 +117,10 @@ def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
         model = transit * np.exp(np.repeat(np.expand_dims(a2, 0), airmass.shape[0], 0).T * airmass)
     print(type(model))
     print(type(data))
-    detrend = data / model
+    try:
+        detrend = np.array(data) / model
+    except AttributeError:
+        detrend = data / model
     print(type(detrend))
     return np.mean(np.median(detrend, 0)), np.std(np.median(detrend, 0))
 
