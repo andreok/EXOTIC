@@ -105,9 +105,17 @@ def get_phase(times, per, tmid):
 
 def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
     print('starting mc_a1()')
+    print(type(m_a2))
+    print(type(sig_a2))
     a2 = np.random.normal(m_a2, sig_a2, n)
+    print(type(a2))
+    print(type(transit))
+    print(type(airmass))
     model = transit * np.exp(np.repeat(np.expand_dims(a2, 0), airmass.shape[0], 0).T * airmass)
+    print(type(model))
+    print(type(data))
     detrend = data / model
+    print(tyoe(detrend))
     return np.mean(np.median(detrend, 0)), np.std(np.median(detrend, 0))
 
 @jit(nopython=True)
