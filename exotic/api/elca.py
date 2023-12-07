@@ -1005,7 +1005,7 @@ class glc_fitter(lc_fitter):
 
             # plot data
             try:
-                axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.asnumpy(np.std(np.array(self.lc_data)[n]['residuals'])/np.median(np.array(self.lc_data)[n]['flux'])), 
+                axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(np.array(self.lc_data)[n]['residuals'])/np.median(np.array(self.lc_data)[n]['flux']), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
             except AttributeError:
                 axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(self.lc_data[n]['residuals'])/np.median(self.lc_data[n]['flux']), 
@@ -1013,7 +1013,7 @@ class glc_fitter(lc_fitter):
 
             # plot residuals
             try:
-                axs[1].plot(phase, np.asnumpy(self.lc_data[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2), color=ncolor, marker=nmarker, ls='none',
+                axs[1].plot(phase, self.lc_data[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2, color=ncolor, marker=nmarker, ls='none',
                          alpha=0.2)
             except AttributeError:
                 axs[1].plot(phase, self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])*1e2, color=ncolor, marker=nmarker, ls='none',
