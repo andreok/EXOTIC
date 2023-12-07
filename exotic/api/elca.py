@@ -296,7 +296,11 @@ class lc_fitter(object):
                 self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * self.airmass)
             print(type(self.airmass_model))
             print(type(self.transit))
-            self.model = self.transit * self.airmass_model
+            try:
+                self.model = np.array(self.transit) * self.airmass_model
+            except AttributeError:
+                self.model = self.transit * self.airmass_model
+            print(type(self.model))
             print(type(self.data))
             self.detrended = self.data / self.airmass_model
             print(type(self.dataerr))
