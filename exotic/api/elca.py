@@ -124,7 +124,6 @@ def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
     print(type(detrend))
     return np.mean(np.median(detrend, 0)), np.std(np.median(detrend, 0))
 
-@jit(nopython=True)
 def round_to_2(*args):
     x = args[0]
     if len(args) == 1:
@@ -998,11 +997,18 @@ class glc_fitter(lc_fitter):
             alldata['residuals'].extend(self.lc_data[n]['residuals'].tolist())
             
             phase = get_phase(self.lc_data[n]['time'], self.parameters['per'], self.lc_data[n]['priors']['tmid'])
-            si = np.argsort(phase)
+            try:
+                si = np.argsort(np.array(phase))
+            except AttributeError:
+                si = np.argsort(phase)
             #bt2, br2, _ = time_bin(phase[si]*self.parameters['per'], self.lc_data[n]['residuals'][si]/np.median(self.lc_data[n]['flux'])*1e2, bin_dt)
 
             # plot data
-            axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(self.lc_data[n]['residuals'])/np.median(self.lc_data[n]['flux']), 
+            try:
+                axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(self.lc_data[n]['residuals'])/np.median(self.lc_data[n]['flux']), 
+                            ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
+            except AttributeError:
+                axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(self.lc_data[n]['residuals'])/np.median(self.lc_data[n]['flux']), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
 
             # plot residuals
