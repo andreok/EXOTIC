@@ -264,7 +264,7 @@ class lc_fitter(object):
         print(type(self.time_upsample))
         print(type(self.parameters))
         try:
-            self.transit_upsample = transit(np.asnumpy(self.time_upsample), self.parameters)
+            self.transit_upsample = np.asnumpy(transit(np.asnumpy(self.time_upsample), self.parameters))
             self.phase_upsample = get_phase(np.asnumpy(self.time_upsample), self.parameters['per'], self.parameters['tmid'])
         except AttributeError:
             self.transit_upsample = transit(self.time_upsample, self.parameters)
@@ -291,45 +291,74 @@ class lc_fitter(object):
             print(type(self.parameters.get('a2', 0)))
             print(type(self.airmass))
             try:
-                self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * np.array(self.airmass))
+                self.airmass_model = np.asnumpy(self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * np.array(self.airmass)))
             except AttributeError:
                 self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * self.airmass)
             print(type(self.airmass_model))
             print(type(self.transit))
             try:
-                self.model = np.array(self.transit) * self.airmass_model
+                self.model = np.asnumpy(np.array(self.transit) * np.array(self.airmass_model))
             except AttributeError:
                 self.model = self.transit * self.airmass_model
             print(type(self.model))
             print(type(self.data))
-            self.detrended = self.data / self.airmass_model
+            try:
+                self.detrended = np.asnumpy(np.array(self.data) / np.array(self.airmass_model))
+            except AttributeError:
+                self.detrended = self.data / self.airmass_model
             print(type(self.dataerr))
-            self.detrendederr = self.dataerr / self.airmass_model
+            try:
+                self.detrendederr = np.asnumpy(np.array(self.dataerr) / np.array(self.airmass_model))
+            except AttributeError:
+                self.detrendederr = self.dataerr / self.airmass_model
 
-        self.residuals = self.data - self.model
-        self.res_stdev = np.std(self.residuals)/np.median(self.data)
-        self.chi2 = np.sum(self.residuals ** 2 / self.dataerr ** 2)
-        self.bic = len(self.bounds) * np.log(len(self.time)) - 2 * np.log(self.chi2)
+        try:
+            self.residuals = np.asnumpy(np.array(self.data) - np.array(self.model))
+            self.res_stdev = np.asnumpy(np.std(np.array(self.residuals))/np.median(np.array(self.data)))
+            self.chi2 = np.asnumpy(np.sum(np.array(self.residuals) ** 2 / np.array(self.dataerr) ** 2))
+            self.bic = np.asnumpy(len(self.bounds) * np.log(len(self.time)) - 2 * np.log(np.array(self.chi2)))
+        except AttributeError:
+            self.residuals = self.data - self.model
+            self.res_stdev = np.std(self.residuals)/np.median(self.data)
+            self.chi2 = np.sum(self.residuals ** 2 / self.dataerr ** 2)
+            self.bic = len(self.bounds) * np.log(len(self.time)) - 2 * np.log(self.chi2)
 
         # compare fit chi2 to smoothed data chi2
-        dt = np.diff(np.sort(self.time)).mean()
-        si = np.argsort(self.time)
+        try:
+            dt = np.diff(np.sort(np.array(self.time))).mean()
+            si = np.argsort(np.array(self.time))
+        except AttributeError:
+            dt = np.diff(np.sort(self.time)).mean()
+            si = np.argsort(self.time)
         try:
             self.sdata = savgol_filter(self.data[si], 1 + 2 * int(0.5 / 24 / dt), 2)
         except:
             self.sdata = np.ones(len(self.time))
 
-        schi2 = np.sum((self.data[si] - self.sdata) ** 2 / self.dataerr[si] ** 2)
-        self.quality = schi2 / self.chi2
+        try:
+            schi2 = np.sum((np.array(self.data[si]) - np.array(self.sdata)) ** 2 / np.array(elf.dataerr[si]) ** 2)
+            self.quality = np.asnumpy(schi2 / np.array(self.chi2))
+        except AttributeError:
+            schi2 = np.sum((self.data[si] - self.sdata) ** 2 / self.dataerr[si] ** 2)
+            self.quality = schi2 / self.chi2
 
         # measured duration
-        tdur = (self.transit < 1).sum() * np.median(np.diff(np.sort(self.time)))
+        try:
+            tdur = (np.array(self.transit) < 1).sum() * np.median(np.diff(np.sort(np.array(self.time))))
+        except AttributeError:
+            tdur = (self.transit < 1).sum() * np.median(np.diff(np.sort(self.time)))
 
         # test for partial transit
-        newtime = np.linspace(self.parameters['tmid'] - 0.2, self.parameters['tmid'] + 0.2, 10000)
-        newtran = transit(newtime, self.parameters)
-        masktran = newtran < 1
-        newdur = np.diff(newtime).mean() * masktran.sum()
+        try:
+            newtime = np.linspace(np.array(self.parameters['tmid']) - 0.2, np.array(self.parameters['tmid']) + 0.2, 10000)
+            newtran = transit(np.asnumpy(newtime), self.parameters)
+            masktran = np.array(newtran) < 1
+            newdur = np.asnumpy(np.diff(newtime).mean() * masktran.sum())
+        except AttributeError:
+            newtime = np.linspace(self.parameters['tmid'] - 0.2, self.parameters['tmid'] + 0.2, 10000)
+            newtran = transit(newtime, self.parameters)
+            masktran = newtran < 1
+            newdur = np.diff(newtime).mean() * masktran.sum()
 
         self.duration_measured = tdur
         self.duration_expected = newdur
