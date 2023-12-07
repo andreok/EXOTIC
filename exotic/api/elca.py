@@ -290,7 +290,10 @@ class lc_fitter(object):
             print(type(self.parameters['a1']))
             print(type(self.parameters.get('a2', 0)))
             print(type(self.airmass))
-            self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * self.airmass)
+            try:
+                self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * np.array(self.airmass))
+            except AttributeError:
+                self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * self.airmass)
             print(type(self.airmass_model))
             print(type(self.transit))
             self.model = self.transit * self.airmass_model
