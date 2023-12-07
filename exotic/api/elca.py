@@ -48,6 +48,7 @@ try:
     if 'np' in globals():
         del globals()['np']
     import cupy as np
+    import numpy as numpy
 except ImportError:
     import numpy as np
 from pylightcurve.models.exoplanet_lc import transit as pytransit
@@ -998,24 +999,24 @@ class glc_fitter(lc_fitter):
             
             phase = get_phase(self.lc_data[n]['time'], self.parameters['per'], self.lc_data[n]['priors']['tmid'])
             try:
-                si = np.argsort(np.array(phase))
-            except AttributeError:
+                si = numpy.argsort(phase)
+            except NameError:
                 si = np.argsort(phase)
             #bt2, br2, _ = time_bin(phase[si]*self.parameters['per'], self.lc_data[n]['residuals'][si]/np.median(self.lc_data[n]['flux'])*1e2, bin_dt)
 
             # plot data
             try:
-                axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.asnumpy(np.std(np.array(self.lc_data)[n]['residuals'])/np.median(np.array(self.lc_data)[n]['flux'])), 
+                axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=numpy.std(self.lc_data[n]['residuals'])/numpy.median(self.lc_data[n]['flux']), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
-            except AttributeError:
+            except NameError:
                 axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(self.lc_data[n]['residuals'])/np.median(self.lc_data[n]['flux']), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
 
             # plot residuals
             try:
-                axs[1].plot(phase, np.asnumpy(np.array(self.lc_data)[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2), color=ncolor, marker=nmarker, ls='none',
+                axs[1].plot(phase, self.lc_data[n]['residuals']/numpy.median(self.lc_data[n]['flux'])*1e2, color=ncolor, marker=nmarker, ls='none',
                          alpha=0.2)
-            except AttributeError:
+            except NameError:
                 axs[1].plot(phase, self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])*1e2, color=ncolor, marker=nmarker, ls='none',
                          alpha=0.2)
 
@@ -1027,8 +1028,8 @@ class glc_fitter(lc_fitter):
             else:
                 try:
                     axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
-                                label=r'{}: {:.2f} %'.format(self.lc_data[n].get('name',''),np.asnumpy(np.std(np.array(self.lc_data)[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2))))
-                except AttributeError:
+                                label=r'{}: {:.2f} %'.format(self.lc_data[n].get('name',''),numpy.std(self.lc_data[n]['residuals']/numpy.median(self.lc_data[n]['flux'])*1e2)))
+                except NameError:
                     axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
                                 label=r'{}: {:.2f} %'.format(self.lc_data[n].get('name',''),np.std(self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])*1e2)))
 
@@ -1036,8 +1037,8 @@ class glc_fitter(lc_fitter):
             minp = min(minp, min(phase))
             maxp = max(maxp, max(phase))
             try:
-                min_std = min(min_std, np.std(np.array(self.lc_data)[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])))
-            except AttributeError:
+                min_std = min(min_std, numpy.std(self.lc_data[n]['residuals']/numpy.median(self.lc_data[n]['flux'])))
+            except NameError:
                 min_std = min(min_std, np.std(self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])))
 
             # plot individual best fit models
@@ -1046,13 +1047,16 @@ class glc_fitter(lc_fitter):
 
         # create binned plot for all the data
         for k in alldata.keys():
-            alldata[k] = np.array(alldata[k])
+            try:
+                alldata[k] = numpy.array(alldata[k])
+            except NameError:
+                alldata[k] = np.array(alldata[k])
             
         phase = get_phase(alldata['time'], self.parameters['per'], self.lc_data[n]['priors']['tmid'])
         try:
             si = np.argsort(np.array(phase))
             bt, br, _ = time_bin(phase[si]*self.parameters['per'], alldata['residuals'][si]/np.asnumpy(np.median(np.array(alldata)['flux'])), 2*bin_dt)
-        except AttributeError:
+        except NameError:
             si = np.argsort(phase)
             bt, br, _ = time_bin(phase[si]*self.parameters['per'], alldata['residuals'][si]/np.median(alldata['flux']), 2*bin_dt)
         bt, bf, bs = time_bin(phase[si]*self.parameters['per'], alldata['detrend'][si], 2*bin_dt)
@@ -1061,8 +1065,8 @@ class glc_fitter(lc_fitter):
             axs[0].errorbar(bt/self.parameters['per'],bf,yerr=bs,alpha=1,zorder=2,color='white',ls='none',marker='o',ms=15,
                         markeredgecolor='black',
                         ecolor='black',
-                        label=r'Binned Data: {:.2f} %'.format(np.asnumpy(np.std(np.array(br))*1e2)))
-        except AttributeError:
+                        label=r'Binned Data: {:.2f} %'.format(numpy.std(br)*1e2))
+        except NameError:
             axs[0].errorbar(bt/self.parameters['per'],bf,yerr=bs,alpha=1,zorder=2,color='white',ls='none',marker='o',ms=15,
                         markeredgecolor='black',
                         ecolor='black',
@@ -1072,17 +1076,17 @@ class glc_fitter(lc_fitter):
         
         # best fit model
         try:
-            self.time_upsample = np.asnumpy(np.linspace(minp*np.array(self.parameters)['per']+np.array(self.parameters)['tmid'], 
-                                         maxp*np.array(self.parameters)['per']+np.array(self.parameters)['tmid'], 10000))
-        except AttributeError:
+            self.time_upsample = numpy.linspace(minp*self.parameters['per']+self.parameters['tmid'], 
+                                         maxp*self.parameters['per']+self.parameters['tmid'], 10000))
+        except NameError:
             self.time_upsample = np.linspace(minp*self.parameters['per']+self.parameters['tmid'], 
                                          maxp*self.parameters['per']+self.parameters['tmid'], 10000)
 
         self.transit_upsample = transit(self.time_upsample, self.parameters)
         self.phase_upsample = get_phase(self.time_upsample, self.parameters['per'], self.parameters['tmid'])
         try:
-            sii = np.argsort(np.array(self.phase_upsample))
-        except AttributeError:
+            sii = numpy.argsort(self.phase_upsample)
+        except NameError:
             sii = np.argsort(self.phase_upsample)
         axs[0].plot(self.phase_upsample[sii], self.transit_upsample[sii], 'r-', zorder=3, label=lclabel, lw=3)
 
@@ -1107,9 +1111,9 @@ class glc_fitter(lc_fitter):
                 axs[1].set_xlim([min(self.phase_upsample), max(self.phase_upsample)])
             elif phase_limits == "median":
                 try:
-                    axs[0].set_xlim([np.median(mins), np.median(maxs)])
-                    axs[1].set_xlim([np.median(mins), np.median(maxs)])
-                except AttributeError:
+                    axs[0].set_xlim([numpy.median(mins), numpy.median(maxs)])
+                    axs[1].set_xlim([numpy.median(mins), numpy.median(maxs)])
+                except NameError:
                     axs[0].set_xlim([np.median(np.array(mins)), np.median(np.array(maxs))])
                     axs[1].set_xlim([np.median(np.array(mins)), np.median(np.array(maxs))])
             else:
