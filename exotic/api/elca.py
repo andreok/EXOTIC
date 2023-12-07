@@ -1005,7 +1005,7 @@ class glc_fitter(lc_fitter):
 
             # plot data
             try:
-                axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(np.array(self.lc_data)[n]['residuals'])/np.median(np.array(self.lc_data)[n]['flux']), 
+                axs[0].errorbar(np.array(phase), np.array(self.lc_data)[n]['detrend'], yerr=np.std(np.array(self.lc_data)[n]['residuals'])/np.median(np.array(self.lc_data)[n]['flux']), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
             except AttributeError:
                 axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.std(self.lc_data[n]['residuals'])/np.median(self.lc_data[n]['flux']), 
@@ -1013,7 +1013,7 @@ class glc_fitter(lc_fitter):
 
             # plot residuals
             try:
-                axs[1].plot(phase, self.lc_data[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2, color=ncolor, marker=nmarker, ls='none',
+                axs[1].plot(np.array(phase), np.array(self.lc_data)[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2, color=ncolor, marker=nmarker, ls='none',
                          alpha=0.2)
             except AttributeError:
                 axs[1].plot(phase, self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])*1e2, color=ncolor, marker=nmarker, ls='none',
@@ -1026,8 +1026,8 @@ class glc_fitter(lc_fitter):
                 axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker)
             else:
                 try:
-                    axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
-                                label=r'{}: {:.2f} %'.format(self.lc_data[n].get('name',''),np.std(np.array(self.lc_data)[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2)))
+                    axs[0].errorbar(np.array(bt2)/np.array(self.lc_data)[n]['priors']['per'],np.array(bf2),yerr=np.array(bs),alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
+                                label=r'{}: {:.2f} %'.format(np.array(self.lc_data)[n].get('name',''),np.std(np.array(self.lc_data)[n]['residuals']/np.median(np.array(self.lc_data)[n]['flux'])*1e2)))
                 except AttributeError:
                     axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
                                 label=r'{}: {:.2f} %'.format(self.lc_data[n].get('name',''),np.std(self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])*1e2)))
@@ -1042,7 +1042,10 @@ class glc_fitter(lc_fitter):
 
             # plot individual best fit models
             if show_individual_fits:
-                axs[0].plot(self.lc_data[n]['phase_upsample'], self.lc_data[n]['transit_upsample'], color=ncolor, zorder=3, alpha=0.5)
+                try:
+                    axs[0].plot(np.array(self.lc_data)[n]['phase_upsample'], np.array(self.lc_data)[n]['transit_upsample'], color=ncolor, zorder=3, alpha=0.5)
+                except AttributeError:
+                    axs[0].plot(self.lc_data[n]['phase_upsample'], self.lc_data[n]['transit_upsample'], color=ncolor, zorder=3, alpha=0.5)
 
         # create binned plot for all the data
         for k in alldata.keys():
@@ -1061,7 +1064,7 @@ class glc_fitter(lc_fitter):
         bt, bf, bs = time_bin(phase[si]*self.parameters['per'], alldata['detrend'][si], 2*bin_dt)
 
         try:
-            axs[0].errorbar(bt/self.parameters['per'],bf,yerr=bs,alpha=1,zorder=2,color='white',ls='none',marker='o',ms=15,
+            axs[0].errorbar(np.array(bt)/np.array(self.parameters)['per'],np.array(bf),yerr=np.array(bs),alpha=1,zorder=2,color='white',ls='none',marker='o',ms=15,
                         markeredgecolor='black',
                         ecolor='black',
                         label=r'Binned Data: {:.2f} %'.format(np.std(np.array(br))*1e2))
@@ -1071,7 +1074,10 @@ class glc_fitter(lc_fitter):
                         ecolor='black',
                         label=r'Binned Data: {:.2f} %'.format(np.std(br)*1e2))
 
-        axs[1].plot(bt/self.parameters['per'],br*1e2,color='white',ls='none',marker='o',ms=11,markeredgecolor='black')
+        try:
+            axs[1].plot(bt/self.parameters['per'],br*1e2,color='white',ls='none',marker='o',ms=11,markeredgecolor='black')
+        except AttributeError:
+            axs[1].plot(np.array(bt)/np.array(self.parameters)['per'],np.array(br)*1e2,color='white',ls='none',marker='o',ms=11,markeredgecolor='black')
 
         # best fit model
         try:
