@@ -276,16 +276,24 @@ class lc_fitter(object):
         if np.ndim(self.airmass) == 2:
             print(type(self.data))
             print(type(self.transit))
-            detrended = self.data / self.transit
+            try:
+                detrended = np.asnumpy(np.array(self.data) / np.array(self.transit))
+            except AttributeError:
+                detrended = self.data / self.transit
             print(type(detrended))
             print(type(self.gw))
             print(type(self.nearest))
             self.wf = weightedflux(detrended, self.gw, self.nearest)
             print(type(self.wf))
-            self.model = self.transit * self.wf
-            self.detrended = self.data / self.wf
             print(type(self.dataerr))
-            self.detrendederr = self.dataerr / self.wf
+            try:
+                self.model = np.asnumpy(np.array(self.transit) * np.array(self.wf))
+                self.detrended = np.asnumpy(np.array(self.data) / np.array(self.wf))
+                self.detrendederr = np.asnumpy(np.array(self.dataerr) / np.array(self.wf))
+            except AttributeError:
+                self.model = self.transit * self.wf
+                self.detrended = self.data / self.wf
+                self.detrendederr = self.dataerr / self.wf
         else:
             print(type(self.parameters['a1']))
             print(type(self.parameters.get('a2', 0)))
@@ -336,7 +344,7 @@ class lc_fitter(object):
             self.sdata = np.ones(len(self.time))
 
         try:
-            schi2 = np.sum((np.array(self.data[si]) - np.array(self.sdata)) ** 2 / np.array(elf.dataerr[si]) ** 2)
+            schi2 = np.sum((np.array(self.data)[si] - np.array(self.sdata)) ** 2 / np.array(self.dataerr)[si] ** 2)
             self.quality = np.asnumpy(schi2 / np.array(self.chi2))
         except AttributeError:
             schi2 = np.sum((self.data[si] - self.sdata) ** 2 / self.dataerr[si] ** 2)
