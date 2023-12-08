@@ -67,6 +67,7 @@ Msun = const.M_sun.to(u.kg).value
 Rsun = const.R_sun.to(u.m).value
 Grav = const.G.to(u.m**3/u.kg/u.day**2).value
 
+@jit(nopython=True)
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
@@ -112,6 +113,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 
     return [x, y, z]
 
+@jit(nopython=True)
 def rv_model(time, params, dt=0.0001):
     """
     Compute the radial velocity model for a planet orbiting a star
@@ -133,6 +135,7 @@ def rv_model(time, params, dt=0.0001):
                             time+dt, mu=1-params['mu'], ww=0)
     return (xp2-xp)*params['mu']*params['rstar']*80520833.33333333 # Rstar/day -> m/s
 
+@jit(nopython=True)
 def acceleration_model(time, params, dt=0.0001):
     # estimate radial acceleration from velocity
     v1 = rv_model(time, params, dt=dt)
@@ -196,8 +199,12 @@ class rv_fitter(lc_fitter):
             lfreekeys.append(list(self.local_bounds[i].keys()))
             boundarray.extend([self.local_bounds[i][k] for k in lfreekeys[-1]])
             alltime.extend(self.data[i]['time'])
-        boundarray = np.array(boundarray)
-        alltime = np.array(alltime)
+        try:
+            boundarray = np.asnumpy(np.array(boundarray))
+            alltime = np.asnumpy(np.array(alltime))
+        except AttributeError:
+            boundarray = np.array(boundarray)
+            alltime = np.array(alltime)
         dalltime = alltime - alltime.min()
         # make global time array and masks for each data set
         tmask = np.zeros(len(alltime), dtype=bool)
@@ -208,7 +215,10 @@ class rv_fitter(lc_fitter):
             idx += len(self.data[i]['time'])
 
         # transform unit cube to prior volume
-        bounddiff = np.diff(boundarray,1).reshape(-1)
+        try:
+            bounddiff = np.array(np.diff(np.array(boundarray),1).reshape(-1))
+        except AttributeError:
+            bounddiff = np.diff(boundarray,1).reshape(-1)
         def prior_transform(upars):
             return (boundarray[:,0] + bounddiff*upars)
 
@@ -260,8 +270,12 @@ class rv_fitter(lc_fitter):
 
                 # handle offset
                 detrend = self.data[i]['vel'] - model
-                model += np.mean(detrend)
-                chi2 += np.mean(((self.data[i]['vel']-model)/(self.data[i]['velerr']))**2)/nobs
+                try:
+                    model = pp.asnumpy(np.array(model) + np.mean(np.array(detrend)))
+                    chi2 += np.mean(((np.array(self.data[i]['vel'])-np.array(model))/(np.array(self.data[i]['velerr'])))**2)/nobs
+                except AttributeError:
+                    model += np.mean(detrend)
+                    chi2 += np.mean(((self.data[i]['vel']-model)/(self.data[i]['velerr']))**2)/nobs
                 # penalize for jitter - changes likelihood surface too much to parameterize
                 #chi2 += np.log(self.data[i]['priors']['jitter']*np.ones_like(self.data[i]['velerr'])).sum()
 
@@ -328,7 +342,10 @@ class rv_fitter(lc_fitter):
             self.data[n]['residuals'] = self.data[n]['detrend'] - self.data[n]['model']
 
         # global up-scaled model
-        self.alltime = np.linspace(min(alltime), max(alltime), 100000)
+        try:
+            self.alltime = np.asnumpy(np.linspace(min(alltime), max(alltime), 100000))
+        except AttributeError:
+            self.alltime = np.linspace(min(alltime), max(alltime), 100000)
         dalltime = self.alltime - self.alltime.min()
         rv = rv_model(self.alltime, self.data[0]['priors'])
 
@@ -360,10 +377,18 @@ class rv_fitter(lc_fitter):
 
             ax[1].errorbar(phase, self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='')
-            ax[2].errorbar(phase, self.data[n]['residuals'], yerr=self.data[n]['velerr'], 
+            try:
+                ax[2].errorbar(phase, self.data[n]['residuals'], yerr=self.data[n]['velerr'], 
+                        marker=nmarker, color=ncolor, ls='', 
+                        label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
+                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
+                        marker=nmarker, color=ncolor, ls='', 
+                        label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
+            except AttributeError:
+                ax[2].errorbar(phase, self.data[n]['residuals'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
-            ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
+                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
 
@@ -422,7 +447,12 @@ class rv_fitter(lc_fitter):
             #ax[1].errorbar(phase, self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
             #            marker=nmarker, color=ncolor, ls='')
 
-            ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
+            try:
+                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
+                        marker=nmarker, color=ncolor, ls='', 
+                        label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
+            except AttributeError:
+                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
 
@@ -447,7 +477,10 @@ class rv_fitter(lc_fitter):
 
         max_idx = self.allmodel[si].argmax()
         # compute smaller phase limits +/- 0.01 around the max
-        phase_limits = np.array([(nphase[si][max_idx]-0.01), (nphase[si][max_idx]+0.01)])
+        try:
+            phase_limits = np.asnumpy(np.array([(nphase[si][max_idx]-0.01), (nphase[si][max_idx]+0.01)]))
+        except AttributeError:
+            phase_limits = np.array([(nphase[si][max_idx]-0.01), (nphase[si][max_idx]+0.01)])
 
         max_time = self.alltime[si][max_idx]
         max_phase = nphase[si][max_idx]
@@ -504,7 +537,10 @@ class rv_fitter(lc_fitter):
         fig = plt.figure(figsize=(10,10))
         ax = fig.add_subplot(111,projection='3d')
         ax2 = fig.add_subplot(331,projection='3d')
-        newtime = np.linspace(self.data[0]['priors']['tmid']+1, self.data[0]['priors']['tmid']+self.data[0]['priors']['per']+1, 10000)
+        try:
+            newtime = np.asnumpy(np.linspace(self.data[0]['priors']['tmid']+1, self.data[0]['priors']['tmid']+self.data[0]['priors']['per']+1, 10000))
+        except AttributeError:
+            newtime = np.linspace(self.data[0]['priors']['tmid']+1, self.data[0]['priors']['tmid']+self.data[0]['priors']['per']+1, 10000)
         xs,ys,zs = planet_orbit( self.data[0]['priors']['per'],  self.data[0]['priors']['ars'],  self.data[0]['priors']['ecc'], 
                                 self.data[0]['priors']['inc'],  self.data[0]['priors']['omega'],  self.data[0]['priors']['tmid'], 
                                 newtime, mu= self.data[0]['priors']['mu'], ww=0)
@@ -522,14 +558,24 @@ class rv_fitter(lc_fitter):
         mide = np.argmin(edata)
         midt = np.argmin(tdata)
         # time of periastron - integral is wrong...
-        omega = np.linspace(0, -np.pi/2- self.data[0]['priors']['omega']*np.pi/180,10000)
-        dt = (self.data[0]['priors']['per']/(2*np.pi*np.sqrt(1-self.data[0]['priors']['ecc']**2)))
-        fn = (1-self.data[0]['priors']['ecc']**2)/(1+self.data[0]['priors']['ecc']*np.cos(omega))**2
-        integral = np.trapz(fn,omega)*dt
-        tperi = newtime[mide]-integral
-        midp = np.argmin(np.abs(newtime-tperi))
-        tperi2 = newtime[np.argmin(distance)]
-        midp2 = np.argmin(np.abs(newtime-tperi2)) # numerical solution
+        try:
+            omega = np.asnumpy(np.linspace(0, -np.pi/2- self.data[0]['priors']['omega']*np.pi/180,10000))
+            dt = (self.data[0]['priors']['per']/(2*np.pi*np.sqrt(1-self.data[0]['priors']['ecc']**2)))
+            fn = (1-self.data[0]['priors']['ecc']**2)/(1+self.data[0]['priors']['ecc']*np.cos(omega))**2
+            integral = np.asnumpy(np.trapz(fn,np.array(omega))*dt)
+            tperi = newtime[mide]-integral
+            midp = np.argmin(np.abs(np.array(newtime)-np.array(tperi))))
+            tperi2 = newtime[np.argmin(distance)]
+            midp2 = np.argmin(np.abs(np.array(newtime)-np.array(tperi2))) # numerical solution
+        except AttributeError:
+            omega = np.linspace(0, -np.pi/2- self.data[0]['priors']['omega']*np.pi/180,10000)
+            dt = (self.data[0]['priors']['per']/(2*np.pi*np.sqrt(1-self.data[0]['priors']['ecc']**2)))
+            fn = (1-self.data[0]['priors']['ecc']**2)/(1+self.data[0]['priors']['ecc']*np.cos(omega))**2
+            integral = np.trapz(fn,omega)*dt
+            tperi = newtime[mide]-integral
+            midp = np.argmin(np.abs(newtime-tperi))
+            tperi2 = newtime[np.argmin(distance)]
+            midp2 = np.argmin(np.abs(newtime-tperi2)) # numerical solution      
         tperi3 = timetrans_to_timeperi(newtime[midt], self.data[0]['priors']['per'], self.data[0]['priors']['ecc'], self.data[0]['priors']['omega']*np.pi/180) + self.data[0]['priors']['per']
 
         print("mid eclipse: ", newtime[mide])
@@ -540,7 +586,10 @@ class rv_fitter(lc_fitter):
         print(f"Integral: {tperi}")
         print(f"Numerical: {tperi2}")
         print(f"RADVEL: {tperi3}")
-        midp3 = np.argmin(np.abs(newtime-tperi3))
+        try:
+            midp3 = np.argmin(np.abs(np.array(newtime)-np.array(tperi3)))
+        except AttributeError:
+            midp3 = np.argmin(np.abs(newtime-tperi3))
 
         cmap = plt.cm.jet  # define the colormap
         # extract all colors from the .jet map
@@ -558,8 +607,12 @@ class rv_fitter(lc_fitter):
         tmid = newtime[midt]
         emid = newtime[mide]
         DT = tmid - emid
-        nbins = int(np.round(DT)+4)
-        bounds = np.round(np.linspace(emid-1.5, tmid+2, nbins),1)
+        try:
+            nbins = int(np.round(np.array(DT))+4)
+            bounds = np.asnumpy(np.round(np.linspace(emid-1.5, tmid+2, nbins),1))
+        except AttributeError:
+            nbins = int(np.round(DT)+4)
+            bounds = np.round(np.linspace(emid-1.5, tmid+2, nbins),1)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         im = ax.scatter(xp, yp, zp, c=newtime, cmap=cmap, norm=norm,  s=10, zorder=1)
