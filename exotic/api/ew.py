@@ -57,8 +57,11 @@ class ExoplanetWatch():
         '''        
 
         # download the results JSON
-        r = urllib.request.urlopen(self.url)
-        jdata = json.loads(r.read().decode(r.info().get_param('charset') or 'utf-8'))
+        #r = urllib.request.urlopen(self.url)
+        #jdata = json.loads(r.read().decode(r.info().get_param('charset') or 'utf-8'))
+        r = urllib.request.Request(self.url, data=None, headers='User-Agend': 'Mozilla/5.0')
+        f = urllib.request.urlopen(r)
+        jdata = json.loads(f.read().decode(r.info().get_param('charset') or 'utf-8'))
         self.alldata = jdata['items']
 
         # list targets
