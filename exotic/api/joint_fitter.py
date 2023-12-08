@@ -68,7 +68,7 @@ Msun = const.M_sun.to(u.kg).value
 Rsun = const.R_sun.to(u.m).value
 Grav = const.G.to(u.m**3/u.kg/u.day**2).value
 
-
+@jit(nopython=True)
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1, W=0):
     # see original @ https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
@@ -120,14 +120,18 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
 
     position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
 
-    projected_distance = np.where(
-        position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
-        np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
-
     try: # pylightcurve require numpy
+        projected_distance = np.where(
+            np.array(position_vector[0]) < 0, 1.0 + 5.0 * rp_over_rs,
+            np.sqrt(np.array(position_vector[1]) * np.array(position_vector[1]) + np.array(position_vector[2]) * np.array(position_vector[2])))
+
         return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, np.asnumpy(projected_distance),
                              method=method, precision=precision)
     except AttributeError:
+        projected_distance = np.where(
+            position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
+            np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
+        
         return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              method=method, precision=precision)
 
@@ -169,6 +173,7 @@ def phasecurve(times, values):
     emask = np.floor(emodel)
     return (brightness*(emask) + (edepth+emodel)*(1-emask))*tmodel
 
+@jit(nopython=True)
 def rv_model(time, params, dt=0.0001):
     xp,yp,zp = planet_orbit(params['per'], params['ars'], params['ecc'], 
                             params['inc'], params['omega'], params['tmid'], 
@@ -269,19 +274,28 @@ class joint_fitter(glc_fitter):
             lfreekeys.append(list(self.local_rv_bounds[i].keys()))
             boundarray.extend([self.local_rv_bounds[i][k] for k in lfreekeys[-1]])
             alltime.extend(self.rv_data[i]['time'])
-        alltime = np.array(alltime)
+        try:
+            alltime = np.asnumpy(np.array(alltime))
+        except AttributeError:
+            alltime = np.array(alltime)
         dalltime = alltime - alltime.min()
 
         # collect LC data
         for i in range(nobs_lc):
             lfreekeys.append(list(self.local_lc_bounds[i].keys()))
             boundarray.extend([self.local_lc_bounds[i][k] for k in lfreekeys[-1]])
-        boundarray = np.array(boundarray)
+        try:
+            boundarray = np.array(boundarray)
+        except AttributeError:
+            boundarray = np.array(boundarray)
 
         print(boundarray)
 
         # make global time array and time masks for each rv data set
-        tmask = np.zeros(len(alltime), dtype=bool)
+        try:
+            tmask = np.asnumpy(np.zeros(len(alltime), dtype=bool))
+        except AttributeError:
+            tmask = np.zeros(len(alltime), dtype=bool)
         idx = 0
         for i in range(nobs_rv):
             self.rv_data[i]['time_mask'] = tmask.copy()
@@ -289,7 +303,10 @@ class joint_fitter(glc_fitter):
             idx += len(self.rv_data[i]['time'])
 
         # transform unit cube to prior volume
-        bounddiff = np.diff(boundarray,1).reshape(-1)
+        try:
+            bounddiff = np.asnumpy(np.diff(boundarray,1).reshape(-1))
+        except AttributeError:
+            bounddiff = np.diff(boundarray,1).reshape(-1)
 
         # create a gaussian priors, if any
         gaussian_priors = {}
@@ -372,10 +389,16 @@ class joint_fitter(glc_fitter):
 
                 # handle offset
                 detrend = self.rv_data[i]['vel'] - model
-                model += np.mean(detrend)
+                try:
+                    model = as.numpy(np.array(model) + np.mean(np.array(detrend)))
+                except AttributeError:
+                    model += np.mean(detrend)
 
                 # TODO add error scaling to chi2
-                rv_chi2 += np.sum(((self.rv_data[i]['vel']-model)/(self.rv_data[i]['velerr']))**2)#/nobs_rv
+                try:
+                    rv_chi2 += np.sum(((np.array(self.rv_data[i]['vel'])-np.array(model))/(np.array(self.rv_data[i]['velerr'])))**2)#/nobs_rv
+                except AttributeError:
+                    rv_chi2 += np.sum(((self.rv_data[i]['vel']-model)/(self.rv_data[i]['velerr']))**2)#/nobs_rv
 
             # for each LC dataset compute chi2
             for i in range(nobs_lc):
@@ -397,15 +420,22 @@ class joint_fitter(glc_fitter):
 
                 # handle offset
                 detrend = self.lc_data[i]['flux']/model
-                model *= np.mean(detrend)
-                lc_chi2 += 2*np.sum(((self.lc_data[i]['flux']-model)/(self.lc_data[i]['ferr']))**2)
+                try:
+                    model = np.asnumpy(np.array(model) * np.mean(np.array(detrend)))
+                    lc_chi2 += 2*np.sum(((np.array(self.lc_data[i]['flux'])-np.array(model))/(np.array(self.lc_data[i]['ferr'])))**2)
+                except AttributeError:
+                    model *= np.mean(detrend)
+                    lc_chi2 += 2*np.sum(((self.lc_data[i]['flux']-model)/(self.lc_data[i]['ferr']))**2)
 
             # add ephemeris into chi2
             self.ephemeris['tmid_orbit'] = np.round((self.ephemeris['tmid'][:,0]-self.lc_data[0]['priors']['tmid'])/self.rv_data[0]['priors']['per'])
 
             # predict mid-transit time
             tmid_pred = self.ephemeris['tmid_orbit']*self.rv_data[0]['priors']['per'] + self.lc_data[0]['priors']['tmid']
-            eph_chi2 += np.sum(((tmid_pred-self.ephemeris['tmid'][:,0])/(self.ephemeris['tmid'][:,1]+self.ephemeris['noise']))**2)
+            try:
+                eph_chi2 += np.sum(((np.array(tmid_pred-self.ephemeris['tmid'][:,0]))/(np.array(self.ephemeris['tmid'][:,1])+self.ephemeris['noise']))**2)
+            except AttributeError:
+                eph_chi2 += np.sum(((tmid_pred-self.ephemeris['tmid'][:,0])/(self.ephemeris['tmid'][:,1]+self.ephemeris['noise']))**2)
 
             # predict mid-eclipse time [slow but accurate]
             emid = eclipse_mid_time(
@@ -416,12 +446,18 @@ class joint_fitter(glc_fitter):
                 self.rv_data[0]['priors']['omega'], 
                 self.lc_data[0]['priors']['tmid'])
 
-            self.ephemeris['emid_orbit'] = np.round((self.ephemeris['emid'][:,0]-emid)/self.rv_data[0]['priors']['per'])
+            try:
+                self.ephemeris['emid_orbit'] = np.asnumpy(np.round((np.array(self.ephemeris['emid'][:,0])-emid)/self.rv_data[0]['priors']['per']))
+            except AttributeError:
+                self.ephemeris['emid_orbit'] = np.round((self.ephemeris['emid'][:,0]-emid)/self.rv_data[0]['priors']['per'])
 
             emid_pred = self.ephemeris['emid_orbit']*self.rv_data[0]['priors']['per'] + emid
 
             #eph_chi2 += np.sum(((emid_pred-self.ephemeris['emid'][:,0])/(self.ephemeris['emid'][:,1]+self.ephemeris['noise']))**2)
-            eph_chi2 += np.sum(((emid_pred-self.ephemeris['emid'][:,0])/(self.ephemeris['emid'][:,1]))**2)
+            try:
+                eph_chi2 += np.sum(((np.array(emid_pred-self.ephemeris['emid'][:,0]))/(np.array(self.ephemeris['emid'][:,1])))**2)
+            except AttributeError:
+                eph_chi2 += np.sum(((emid_pred-self.ephemeris['emid'][:,0])/(self.ephemeris['emid'][:,1]))**2)
 
             # maximization metric for nested sampling
             return -0.5*(rv_chi2 + lc_chi2 + eph_chi2)
@@ -537,9 +573,14 @@ class joint_fitter(glc_fitter):
             detrended.extend(detrend)
             models.extend(model)
 
-        self.time = np.array(time)
-        self.data = np.array(data)
-        self.models = np.array(models)
+        try:
+            self.time = np.asnumpy(np.array(time))
+            self.data = np.asnumpy(np.array(data))
+            self.models = np.asnumpy(np.array(models))
+        except AttributeError:
+            self.time = np.array(time)
+            self.data = np.array(data)
+            self.models = np.array(models)
         self.phase = (self.time-self.parameters['tmid'])/self.parameters['per']
         self.detrended = np.array(detrended)
         self.residuals = self.detrended - self.models
@@ -596,7 +637,10 @@ class joint_fitter(glc_fitter):
                     prior['tmid']-prior['per'])
             
             emids.append(emid)
-            orbits.append(rv_model(np.linspace(self.rv_time.min(), self.rv_time.min()+prior['per'], 10000), prior))
+            try:
+                orbits.append(rv_model(np.asnumpy(np.linspace(self.rv_time.min(), self.rv_time.min()+prior['per'], 10000), prior)))
+            except AttributeError:
+                orbits.append(rv_model(np.linspace(self.rv_time.min(), self.rv_time.min()+prior['per'], 10000), prior))
             semi.append(semimajor)
             arss.append(ars)
             mratio.append(mu)
@@ -616,7 +660,10 @@ class joint_fitter(glc_fitter):
             for n in range(len(self.lc_data)):
                 model = transit(self.lc_data[n]['time'], prior)
                 tmask = model < 1
-                dt = np.diff(self.lc_data[n]['time']).mean()
+                try:
+                    dt = np.asnumpy(np.diff(np.array(self.lc_data[n]['time'])).mean())
+                except AttributeError:
+                    dt = np.diff(self.lc_data[n]['time']).mean()
                 duration = tmask.sum()*dt
                 transits.append(duration)
                 # airmass = np.exp(self.lc_data[n]['airmass']*self.lc_data[n]['priors']['a2'])
@@ -626,33 +673,62 @@ class joint_fitter(glc_fitter):
 
         for n in range(len(self.rv_data)):
             key = self.rv_data[n]['name']+"_offset"
-            self.parameters[key] = np.mean(offsets[self.rv_data[n]['name']])
-            self.errors[key] = np.std(offsets[self.rv_data[n]['name']])
+            try:
+                self.parameters[key] = np.mean(np.array(offsets[self.rv_data[n]['name']]))
+                self.errors[key] = np.std(np.array(offsets[self.rv_data[n]['name']]))
+            except AttributeError:
+                self.parameters[key] = np.mean(offsets[self.rv_data[n]['name']])
+                self.errors[key] = np.std(offsets[self.rv_data[n]['name']])
 
         # a/Rs
-        self.parameters['ars'] = np.median(arss)
-        self.errors['ars'] = np.std(arss)
+        try:
+            self.parameters['ars'] = np.median(np.array(arss))
+            self.errors['ars'] = np.std(np.array(arss))
+        except AttributeError:
+            self.parameters['ars'] = np.median(arss)
+            self.errors['ars'] = np.std(arss)
 
         # semimajor axis in AU
-        self.parameters['a'] = np.median(semi)/AU
-        self.errors['a'] = np.std(semi)/AU
+        try:
+            self.parameters['a'] = np.median(np.array(semi))/AU
+            self.errors['a'] = np.std(np.array(semi))/AU
+        except AttributeError:
+            self.parameters['a'] = np.median(semi)/AU
+            self.errors['a'] = np.std(semi)/AU
 
         # mass ratio Mp/Ms
-        self.parameters['mu'] = np.median(mratio)
-        self.errors['mu'] = np.std(mratio)
+        try:
+            self.parameters['mu'] = np.median(np.array(mratio))
+            self.errors['mu'] = np.std(np.array(mratio))
+        except AttributeError:
+            self.parameters['mu'] = np.median(mratio)
+            self.errors['mu'] = np.std(mratio)
 
         # mid -eclipse 
-        self.parameters['emid'] = np.median(emids)
-        self.errors['emid'] = np.std(emids)
+        try:
+            self.parameters['emid'] = np.median(np.array(emids))
+            self.errors['emid'] = np.std(np.array(emids))
+        except AttributeError:
+            self.parameters['emid'] = np.median(emids)
+            self.errors['emid'] = np.std(emids)
 
         # rv semi-amplitude m/s
-        orbit_K = (np.max(orbits,1) - np.min(orbits,1))/2
-        self.parameters['K'] = np.median(orbit_K)
-        self.errors['K'] = np.std(orbit_K)
+        try:
+            orbit_K = (np.max(orbits,1) - np.min(orbits,1))/2
+            self.parameters['K'] = np.median(orbit_K)
+            self.errors['K'] = np.std(orbit_K)
+        except AttributeError:
+            orbit_K = (np.max(np.array(orbits),1) - np.min(np.array(orbits),1))/2
+            self.parameters['K'] = np.median(np.array(orbit_K))
+            self.errors['K'] = np.std(np.array(orbit_K))
         
         # duration in days
-        self.parameters['T14'] = np.median(transits)
-        self.errors['T14'] = np.std(transits)
+        try:
+            self.parameters['T14'] = np.median(np.array(transits))
+            self.errors['T14'] = np.std(np.array(transits))
+        except AttributeError:
+            self.parameters['T14'] = np.median(transits)
+            self.errors['T14'] = np.std(transits)
 
         self.parameters['rprs2'] = self.parameters['rprs']**2
         self.errors['rprs2'] = 2*self.parameters['rprs']*self.errors['rprs']
@@ -673,9 +749,15 @@ class joint_fitter(glc_fitter):
 
             ax[1].errorbar(phase, self.rv_data[n]['detrend'], yerr=self.rv_data[n]['velerr'], 
                         marker=nmarker, color=ncolor,alpha=0.75, ls='')
-            ax[2].errorbar(phase, self.rv_data[n]['residuals'], yerr=self.rv_data[n]['velerr'], 
+            try:
+                ax[2].errorbar(phase, self.rv_data[n]['residuals'], yerr=self.rv_data[n]['velerr'], 
+                        marker=nmarker, color=ncolor,alpha=0.75, ls='', label=rf"{self.rv_data[n]['name']} $\sigma$ = {np.asumpy(np.std(np.array(self.rv_data[n]['residuals']))):.2f} m/s")
+                ax[0].errorbar(self.rv_data[n]['time']-int(self.rv_time.min()), self.rv_data[n]['detrend'], yerr=self.rv_data[n]['velerr'], 
+                        marker=nmarker, color=ncolor,alpha=0.75, ls='', label=rf"{self.rv_data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.rv_data[n]['residuals']))):.2f} m/s")
+            except AttributeError:
+                ax[2].errorbar(phase, self.rv_data[n]['residuals'], yerr=self.rv_data[n]['velerr'], 
                         marker=nmarker, color=ncolor,alpha=0.75, ls='', label=rf"{self.rv_data[n]['name']} $\sigma$ = {np.std(self.rv_data[n]['residuals']):.2f} m/s")
-            ax[0].errorbar(self.rv_data[n]['time']-int(self.rv_time.min()), self.rv_data[n]['detrend'], yerr=self.rv_data[n]['velerr'], 
+                ax[0].errorbar(self.rv_data[n]['time']-int(self.rv_time.min()), self.rv_data[n]['detrend'], yerr=self.rv_data[n]['velerr'], 
                         marker=nmarker, color=ncolor,alpha=0.75, ls='', label=rf"{self.rv_data[n]['name']} $\sigma$ = {np.std(self.rv_data[n]['residuals']):.2f} m/s")
         ax[1].axhline(0, color='k', ls='--', alpha=0.5)
         ax[1].set_xlim([-0.5,0.5])
@@ -708,8 +790,12 @@ class joint_fitter(glc_fitter):
         ############### O-C plot
         fig,ax = plt.subplots(1, figsize=(10,7))
 
-        self.ephemeris['tmid_orbit'] = np.round((self.ephemeris['tmid'][:,0]-self.lc_data[0]['priors']['tmid'])/self.rv_data[0]['priors']['per'])
-        self.ephemeris['historic_orbit'] = np.round((self.ephemeris['historic'][:,0]-self.lc_data[0]['priors']['tmid'])/self.rv_data[0]['priors']['per'])
+        try:
+            self.ephemeris['tmid_orbit'] = np.asnumpy(np.round((np.array(self.ephemeris['tmid'][:,0])-np.array(self.lc_data[0]['priors']['tmid']))/np.array(self.rv_data[0]['priors']['per'])))
+            self.ephemeris['historic_orbit'] = np.asnumpy(np.round((np.array(self.ephemeris['historic'][:,0])-np.array(self.lc_data[0]['priors']['tmid']))/np.array(self.rv_data[0]['priors']['per'])))
+        except AttributeError:
+            self.ephemeris['tmid_orbit'] = np.round((self.ephemeris['tmid'][:,0]-self.lc_data[0]['priors']['tmid'])/self.rv_data[0]['priors']['per'])
+            self.ephemeris['historic_orbit'] = np.round((self.ephemeris['historic'][:,0]-self.lc_data[0]['priors']['tmid'])/self.rv_data[0]['priors']['per'])
 
         # predict mid-transit time
         tmid_pred = self.ephemeris['tmid_orbit']*self.rv_data[0]['priors']['per'] + self.lc_data[0]['priors']['tmid']
@@ -721,8 +807,12 @@ class joint_fitter(glc_fitter):
         ax.errorbar(self.ephemeris['historic_orbit'], historic_residual*24*60, yerr=self.ephemeris['historic'][:,1]*24*60, ls='none', marker='^',label='Not Used',color='gray')
         
         ax.errorbar(self.ephemeris['tmid_orbit'], tmid_residual*24*60, yerr=self.ephemeris['tmid'][:,1]*24*60, ls='none', marker='s',label='Mid-Transit Measurement',color='black')
-        ylower = (tmid_residual.mean()-3*np.std(tmid_residual))*24*60
-        yupper = (tmid_residual.mean()+3*np.std(tmid_residual))*24*60
+        try:
+            ylower = (tmid_residual.mean()-3*np.std(np.array(tmid_residual)))*24*60
+            yupper = (tmid_residual.mean()+3*np.std(np.array(tmid_residual)))*24*60
+        except AttributeError:
+            ylower = (tmid_residual.mean()-3*np.std(tmid_residual))*24*60
+            yupper = (tmid_residual.mean()+3*np.std(tmid_residual))*24*60
 
         # TODO plot each point individually
         #for i in range(len(self.lc_data)):
@@ -738,13 +828,21 @@ class joint_fitter(glc_fitter):
         model = epochs*self.rv_data[0]['priors']['per'] + self.lc_data[0]['priors']['tmid']
 
         # MonteCarlo the new ephemeris for uncertainty
-        mc_m = np.random.normal(self.parameters['per'], self.errors['per'], size=10000)
-        mc_b = np.random.normal(self.parameters['tmid'], self.errors['tmid'], size=10000)
-        mc_model = np.expand_dims(epochs,-1) * mc_m + mc_b
+        try:
+            mc_m = np.asnumpy(np.random.normal(self.parameters['per'], self.errors['per'], size=10000))
+            mc_b = np.asnumpy(np.random.normal(self.parameters['tmid'], self.errors['tmid'], size=10000))
+            mc_model = np.asnumpy(np.expand_dims(np.array(epochs),-1) * np.array(mc_m) + np.array(mc_b))
+        except AttributeError:
+            mc_m = np.random.normal(self.parameters['per'], self.errors['per'], size=10000)
+            mc_b = np.random.normal(self.parameters['tmid'], self.errors['tmid'], size=10000)
+            mc_model = np.expand_dims(epochs,-1) * mc_m + mc_b
 
         # create a fill between area for uncertainty of new ephemeris
         diff = mc_model.T - model
-        ax.fill_between(epochs, np.percentile(diff,16,axis=0)*24*60, np.percentile(diff,84,axis=0)*24*60, alpha=0.2, color='k', label=r'Uncertainty ($\pm$ 1$\sigma$)')
+        try:
+            ax.fill_between(epochs, np.percentile(diff,16,axis=0)*24*60, np.asnumpy(np.percentile(np.array(diff),84,axis=0)*24*60), alpha=0.2, color='k', label=r'Uncertainty ($\pm$ 1$\sigma$)')
+        except AttributeError:
+            ax.fill_between(epochs, np.percentile(diff,16,axis=0)*24*60, np.percentile(diff,84,axis=0)*24*60, alpha=0.2, color='k', label=r'Uncertainty ($\pm$ 1$\sigma$)')
 
         # duplicate axis and plot days since mid-transit
         ax2 = ax.twiny()
@@ -760,19 +858,30 @@ class joint_fitter(glc_fitter):
             epochs_p = ((epochs*self.rv_data[0]['priors']['per'] + self.lc_data[0]['priors']['tmid']) - self.ephemeris['prior']['tmid'][0])/self.ephemeris['prior']['per'][0]
             #epochs_p = (np.linspace(self.ephemeris['tmid'][:,0].min()-7, self.ephemeris['tmid'][:,0].max()+7, 1000) 
             prior_p = epochs_p*self.ephemeris['prior']['per'][0] + self.ephemeris['prior']['tmid'][0]
-            mc_m_p = np.random.normal(self.ephemeris['prior']['per'][0], self.ephemeris['prior']['per'][1], size=10000)
-            mc_b_p = np.random.normal(self.ephemeris['prior']['tmid'][0], self.ephemeris['prior']['tmid'][1], size=10000)
-            mc_model_p = np.expand_dims(epochs_p,-1) * mc_m_p + mc_b_p
+            try:
+                mc_m_p = np.asnumpy(np.random.normal(self.ephemeris['prior']['per'][0], self.ephemeris['prior']['per'][1], size=10000))
+                mc_b_p = np.asnumpy(np.random.normal(self.ephemeris['prior']['tmid'][0], self.ephemeris['prior']['tmid'][1], size=10000))
+                mc_model_p = np.asnumpy(np.expand_dims(np.array(epochs_p),-1) * np.array(mc_m_p) + np.array(mc_b_p))
+            except AttributeError:
+                mc_m_p = np.random.normal(self.ephemeris['prior']['per'][0], self.ephemeris['prior']['per'][1], size=10000)
+                mc_b_p = np.random.normal(self.ephemeris['prior']['tmid'][0], self.ephemeris['prior']['tmid'][1], size=10000)
+                mc_model_p = np.expand_dims(epochs_p,-1) * mc_m_p + mc_b_p
             diff_p = mc_model_p.T - model
 
             # plot an invisible line so the 2nd axes are happy
             #ax2.plot(epochs, (model-prior_p)*24*60, ls='--', color='r', alpha=1)
 
             if show_2sigma:
-                ax.fill_between(epochs, np.percentile(diff_p,2,axis=0)*24*60, np.percentile(diff_p,98,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 2$\sigma$)')
+                try:
+                    ax.fill_between(epochs, np.asnumpy(np.percentile(np.array(diff_p),2,axis=0)*24*60), np.asnumpy(np.percentile(np.array(diff_p),98,axis=0)*24*60), alpha=0.1, color='r', label=r'Prior ($\pm$ 2$\sigma$)')
+                except AttributeError:
+                    ax.fill_between(epochs, np.percentile(diff_p,2,axis=0)*24*60, np.percentile(diff_p,98,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 2$\sigma$)')
             else:
                 # show ~1 sigma
-                ax.fill_between(epochs, np.percentile(diff_p,36,axis=0)*24*60, np.percentile(diff_p,64,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 1$\sigma$)')
+                try:
+                    ax.fill_between(epochs, np.percentile(diff_p,36,axis=0)*24*60, np.asnumpy(np.percentile(np.array(diff_p),64,axis=0)*24*60), alpha=0.1, color='r', label=r'Prior ($\pm$ 1$\sigma$)')
+                except:
+                    ax.fill_between(epochs, np.percentile(diff_p,36,axis=0)*24*60, np.percentile(diff_p,64,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 1$\sigma$)')
 
             #if ylim == 'prior':
             #    ax.set_ylim([ min(np.percentile(diff_p,1,axis=0)*24*60),
@@ -781,7 +890,11 @@ class joint_fitter(glc_fitter):
             #    ax.set_ylim([ 0.5*(min(np.percentile(diff,1,axis=0)*24*60) + min(np.percentile(diff_p,1,axis=0)*24*60)),
             #                0.5*(max(np.percentile(diff,99,axis=0)*24*60) + max(np.percentile(diff_p,99,axis=0)*24*60))])
 
-        ax.axhline(0,color='black',alpha=0.5,ls='--',
+        try:
+            ax.axhline(0,color='black',alpha=0.5,ls='--',
+                    label="Period: {:.5f}+-{:.5f} days\nT_mid: {:.4f}+-{:.4f} BJD".format(self.parameters['per'], self.errors['per'], np.asnumpy(np.round(np.array(self.parameters['tmid']),4)), np.asnumpy(np.round(np.array(self.errors['tmid']),4))))
+        except AttributeError:
+            ax.axhline(0,color='black',alpha=0.5,ls='--',
                     label="Period: {:.5f}+-{:.5f} days\nT_mid: {:.4f}+-{:.4f} BJD".format(self.parameters['per'], self.errors['per'], np.round(self.parameters['tmid'],4), np.round(self.errors['tmid'],4)))
 
         # TODO sig figs
@@ -805,7 +918,10 @@ class joint_fitter(glc_fitter):
         # predict mid-eclipse time
         emid = self.parameters['emid']
 
-        self.ephemeris['emid_orbit'] = np.round((self.ephemeris['emid'][:,0]-emid)/self.rv_data[0]['priors']['per'])
+        try:
+            self.ephemeris['emid_orbit'] = np.asnumpy(np.round((np.array(self.ephemeris['emid'][:,0])-emid)/self.rv_data[0]['priors']['per']))
+        except AttributeError:
+            self.ephemeris['emid_orbit'] = np.round((self.ephemeris['emid'][:,0]-emid)/self.rv_data[0]['priors']['per'])
 
         # predict mid-transit time
         emid_pred = self.ephemeris['emid_orbit']*self.rv_data[0]['priors']['per'] + emid
@@ -819,7 +935,10 @@ class joint_fitter(glc_fitter):
         #     self.rv_data[0]['priors']['omega'], 
         #     self.lc_data[0]['priors']['tmid'] - self.lc_data[0]['priors']['per'])
 
-        self.ephemeris['emid_orbit'] = np.round((self.ephemeris['emid'][:,0]-emid)/self.rv_data[0]['priors']['per'])
+        try:
+            self.ephemeris['emid_orbit'] = np.asnumpy(np.round((np.array(self.ephemeris['emid'][:,0])-emid)/self.rv_data[0]['priors']['per']))
+        except AttributeError:
+            self.ephemeris['emid_orbit'] = np.round((self.ephemeris['emid'][:,0]-emid)/self.rv_data[0]['priors']['per'])
 
         emid_pred = self.ephemeris['emid_orbit']*self.rv_data[0]['priors']['per'] + emid
         emid_residual = self.ephemeris['emid'][:,0] - emid_pred
@@ -827,11 +946,18 @@ class joint_fitter(glc_fitter):
         print("Eclipse Residual [min]:", emid_residual*24*60)
         
         ax.errorbar(self.ephemeris['emid_orbit'], emid_residual*24*60, yerr=self.ephemeris['emid'][:,1]*24*60, ls='none', marker='s',label='Mid-Eclipse Measurement',color='black')
-        ylower = (emid_residual.mean()-3*np.std(emid_residual))*24*60
-        yupper = (emid_residual.mean()+3*np.std(emid_residual))*24*60
+        try:
+            ylower = (emid_residual.mean()-3*np.std(np.array(emid_residual)))*24*60
+            yupper = (emid_residual.mean()+3*np.std(np.array(emid_residual)))*24*60
+        except AttributeError:
+            ylower = (emid_residual.mean()-3*np.std(emid_residual))*24*60
+            yupper = (emid_residual.mean()+3*np.std(emid_residual))*24*60
 
         # upsample data
-        epochs = (np.linspace(self.ephemeris['emid_orbit'].min()-7, max(7,self.ephemeris['emid_orbit'].max()+7), 1000))
+        try:
+            epochs = np.asnumpy(np.linspace(self.ephemeris['emid_orbit'].min()-7, max(7,self.ephemeris['emid_orbit'].max()+7), 1000))
+        except AttributeError:
+            epochs = (np.linspace(self.ephemeris['emid_orbit'].min()-7, max(7,self.ephemeris['emid_orbit'].max()+7), 1000))
 
         depoch = epochs.max() - epochs.min()
         ax.set_xlim([epochs.min()-depoch*0.01, epochs.max()+depoch*0.01])
@@ -846,7 +972,10 @@ class joint_fitter(glc_fitter):
 
         # create a fill between area for uncertainty of new ephemeris
         diff = mc_model.T - model
-        ax.fill_between(epochs, np.percentile(diff,16,axis=0)*24*60, np.percentile(diff,85,axis=0)*24*60, alpha=0.2, color='k', label=r'Uncertainty ($\pm$ 1$\sigma$)')
+        try:
+            ax.fill_between(epochs, np.asnumpy(np.percentile(np.array(diff),16,axis=0)*24*60), np.array(np.percentile(np.array(diff),85,axis=0)*24*60), alpha=0.2, color='k', label=r'Uncertainty ($\pm$ 1$\sigma$)')
+        except AttributeError:
+            ax.fill_between(epochs, np.percentile(diff,16,axis=0)*24*60, np.percentile(diff,85,axis=0)*24*60, alpha=0.2, color='k', label=r'Uncertainty ($\pm$ 1$\sigma$)')
 
         # duplicate axis and plot days since mid-transit
         ax2 = ax.twiny()
@@ -862,27 +991,46 @@ class joint_fitter(glc_fitter):
             epochs_p = ((epochs*self.rv_data[0]['priors']['per'] + emid) - self.ephemeris['prior']['emid'][0])/self.ephemeris['prior']['per'][0]
             #epochs_p = (np.linspace(self.ephemeris['tmid'][:,0].min()-7, self.ephemeris['tmid'][:,0].max()+7, 1000) 
             prior_p = epochs_p*self.ephemeris['prior']['per'][0] + self.ephemeris['prior']['tmid'][0]
-            mc_m_p = np.random.normal(self.ephemeris['prior']['per'][0], self.ephemeris['prior']['per'][1], size=10000)
-            mc_b_p = np.random.normal(self.ephemeris['prior']['emid'][0], self.ephemeris['prior']['emid'][1], size=10000)
-            mc_model_p = np.expand_dims(epochs_p,-1) * mc_m_p + mc_b_p
+            try:
+                mc_m_p = np.asnumpy(np.random.normal(self.ephemeris['prior']['per'][0], self.ephemeris['prior']['per'][1], size=10000))
+                mc_b_p = np.asnumpy(np.random.normal(self.ephemeris['prior']['emid'][0], self.ephemeris['prior']['emid'][1], size=10000))
+                mc_model_p = np.asnumpy(np.expand_dims(np.array(epochs_p),-1) * np.array(mc_m_p) + np.array(mc_b_p))
+            except AttributeError:
+                mc_m_p = np.random.normal(self.ephemeris['prior']['per'][0], self.ephemeris['prior']['per'][1], size=10000)
+                mc_b_p = np.random.normal(self.ephemeris['prior']['emid'][0], self.ephemeris['prior']['emid'][1], size=10000)
+                mc_model_p = np.expand_dims(epochs_p,-1) * mc_m_p + mc_b_p
             diff_p = mc_model_p.T - model
 
             # plot an invisible line so the 2nd axes are happy
             ax2.plot(epochs, (model-prior_p)*24*60, ls='--', color='r', alpha=0)
 
             if show_2sigma:
-                ax.fill_between(epochs, np.percentile(diff_p,2,axis=0)*24*60, np.percentile(diff_p,98,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 2$\sigma$)')
+                try:
+                    ax.fill_between(epochs, np.asnumpy(np.percentile(np.array(diff_p),2,axis=0)*24*60), np.asnumpy(np.percentile(np.array(diff_p),98,axis=0)*24*60), alpha=0.1, color='r', label=r'Prior ($\pm$ 2$\sigma$)')
+                except AttributeError:
+                    ax.fill_between(epochs, np.percentile(diff_p,2,axis=0)*24*60, np.percentile(diff_p,98,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 2$\sigma$)')
             else:
                 # show ~1 sigma
-                ax.fill_between(epochs, np.percentile(diff_p,16,axis=0)*24*60, np.percentile(diff_p,85,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 1$\sigma$)')
+                try:
+                    ax.fill_between(epochs, np.asnumpy(np.percentile(np.array(diff_p),16,axis=0)*24*60), np.asnumpy(np.percentile(np.array(diff_p),85,axis=0)*24*60), alpha=0.1, color='r', label=r'Prior ($\pm$ 1$\sigma$)')
+                except AttributeError:
+                    ax.fill_between(epochs, np.percentile(diff_p,16,axis=0)*24*60, np.percentile(diff_p,85,axis=0)*24*60, alpha=0.1, color='r', label=r'Prior ($\pm$ 1$\sigma$)')
 
             #if ylim == 'prior':
             #    ax.set_ylim([ min(np.percentile(diff_p,1,axis=0)*24*60),
             #                max(np.percentile(diff_p,99,axis=0)*24*60)])
-            ax.set_ylim([ 0.5*(min(np.percentile(diff,1,axis=0)*24*60) + min(np.percentile(diff_p,1,axis=0)*24*60)),
+            try:
+                ax.set_ylim([ 0.5*(min(np.percentile(np.array(diff),1,axis=0)*24*60) + min(np.percentile(np.array(diff_p),1,axis=0)*24*60)),
+                            0.5*(max(np.percentile(np.array(diff),99,axis=0)*24*60) + max(np.percentile(np.array(diff_p),99,axis=0)*24*60))])
+            except AttributeError:
+                ax.set_ylim([ 0.5*(min(np.percentile(diff,1,axis=0)*24*60) + min(np.percentile(diff_p,1,axis=0)*24*60)),
                             0.5*(max(np.percentile(diff,99,axis=0)*24*60) + max(np.percentile(diff_p,99,axis=0)*24*60))])
 
-        ax.axhline(0,color='black',alpha=0.5,ls='--',
+        try:
+            ax.axhline(0,color='black',alpha=0.5,ls='--',
+                    label="Period: {:.5f}+-{:.5f} days\nE_mid: {:.4f}+-{:.4f} BJD".format(self.parameters['per'], self.errors['per'], np.asnumpy(np.round(np.array(emid),4)), np.asnumpy(np.round(np.array(self.errors['emid']),4))))
+        except AttributeError:
+            ax.axhline(0,color='black',alpha=0.5,ls='--',
                     label="Period: {:.5f}+-{:.5f} days\nE_mid: {:.4f}+-{:.4f} BJD".format(self.parameters['per'], self.errors['per'], np.round(emid,4), np.round(self.errors['emid'],4)))
 
         # TODO sig figs
