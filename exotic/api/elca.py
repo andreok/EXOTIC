@@ -69,11 +69,11 @@ except ImportError:
 
 
 @jit(nopython=True)
-def weightedflux(flux, gw, nearest):
+def weightedflux(flux, gw, nearest): # assuming only cupy arrays, if GPU
     return np.sum(flux[nearest] * gw, axis=-1)
 
 @jit(nopython=True)
-def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000):
+def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only cupy arrays, if GPU
     Xm = (X - np.median(X, 0)) * w
     kdtree = spatial.cKDTree(Xm * feature_scale)
     nearest = np.zeros((X.shape[0], neighbors))
@@ -100,28 +100,13 @@ def transit(times, values):
 
 @jit(nopython=True)
 def get_phase(times, per, tmid):
-    print('starting get_phase()')
     return (times - tmid + 0.25 * per) / per % 1 - 0.25
 
-def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000):
-    print('starting mc_a1()')
-    print(type(m_a2))
-    print(type(sig_a2))
+@jit(nopython=True)
+def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000): # assuming only cupy arrays, if GPU
     a2 = np.random.normal(m_a2, sig_a2, n)
-    print(type(a2))
-    print(type(transit))
-    print(type(airmass))
-    try:
-        model = np.array(transit) * np.exp(np.repeat(np.expand_dims(a2, 0), np.array(airmass).shape[0], 0).T * np.array(airmass))
-    except AttributeError:
-        model = transit * np.exp(np.repeat(np.expand_dims(a2, 0), airmass.shape[0], 0).T * airmass)
-    print(type(model))
-    print(type(data))
-    try:
-        detrend = np.array(data) / model
-    except AttributeError:
-        detrend = data / model
-    print(type(detrend))
+    model = transit * np.exp(np.repeat(np.expand_dims(a2, 0), airmass.shape[0], 0).T * airmass)
+    detrend = data / model
     return np.mean(np.median(detrend, 0)), np.std(np.median(detrend, 0))
 
 def round_to_2(*args):
@@ -141,7 +126,7 @@ def round_to_2(*args):
 
 @jit(nopython=True)
 # average data into bins of dt from start to finish
-def time_bin(time, flux, dt=1. / (60 * 24)):
+def time_bin(time, flux, dt=1. / (60 * 24)): # assuming only cupy arrays, if GPU
     bins = int(np.floor((max(time) - min(time)) / dt))
     bflux = np.zeros(bins)
     btime = np.zeros(bins)
@@ -157,7 +142,7 @@ def time_bin(time, flux, dt=1. / (60 * 24)):
 
 @jit(nopython=True)
 # Function that bins an array
-def binner(arr, n, err=''):
+def binner(arr, n, err=''): # assuming only cupy arrays, if GPU
     if len(err) == 0:
         ecks = np.pad(arr.astype(float), (0, ((n - arr.size % n) % n)), mode='constant',
                       constant_values=np.NaN).reshape(-1, n)
@@ -202,14 +187,20 @@ class lc_fitter(object):
         # trim data around predicted transit/eclipse time
         if np.ndim(self.airmass) == 2:
             print(f'Computing nearest neighbors and gaussian weights for {len(self.time)} npts...')
-            self.gw, self.nearest = gaussian_weights(self.airmass, neighbors=self.neighbors)
+            try:
+                self.gw, self.nearest = np.asnumpy(gaussian_weights(np.array(self.airmass), neighbors=np.array(self.neighbors)))
+            except AttributeError:
+                self.gw, self.nearest = gaussian_weights(self.airmass, neighbors=self.neighbors)
 
         def lc2min_nneighbor(pars):
             for i in range(len(pars)):
                 self.prior[freekeys[i]] = pars[i]
             lightcurve = transit(self.time, self.prior)
             detrended = self.data / lightcurve
-            wf = weightedflux(detrended, self.gw, self.nearest)
+            try:
+                wf = np.asnumpy(weightedflux(np.array(detrended), np.array(self.gw), np.array(self.nearest)))
+            except AttributeError:
+                wf = weightedflux(detrended, self.gw, self.nearest)
             model = lightcurve * wf
             return ((self.data - model) / self.dataerr) ** 2
 
@@ -254,14 +245,9 @@ class lc_fitter(object):
         self.create_fit_variables()
 
     def create_fit_variables(self):
-        print('starting create_fit_variables()')
         self.phase = get_phase(self.time, self.parameters['per'], self.parameters['tmid'])
-        print(type(self.time))
-        print(type(self.parameters))
         self.transit = transit(self.time, self.parameters)
         self.time_upsample = np.linspace(min(self.time), max(self.time), 1000)
-        print(type(self.time_upsample))
-        print(type(self.parameters))
         try:
             self.transit_upsample = np.asnumpy(transit(np.asnumpy(self.time_upsample), self.parameters))
             self.phase_upsample = get_phase(np.asnumpy(self.time_upsample), self.parameters['per'], self.parameters['tmid'])
@@ -269,54 +255,36 @@ class lc_fitter(object):
             self.transit_upsample = transit(self.time_upsample, self.parameters)
             self.phase_upsample = get_phase(self.time_upsample, self.parameters['per'], self.parameters['tmid'])
         if self.mode == "ns":
-            self.parameters['a1'], self.errors['a1'] = mc_a1(self.parameters.get('a2', 0), self.errors.get('a2', 1e-6),
+            try:
+                self.parameters['a1'], self.errors['a1'] = mc_a1(np.array(self.parameters.get('a2', 0)), np.array(self.errors.get('a2', 1e-6)),
+                                                             np.array(self.transit), np.array(self.airmass), np.array(self.data))
+            except AttributeError:
+                self.parameters['a1'], self.errors['a1'] = mc_a1(self.parameters.get('a2', 0), self.errors.get('a2', 1e-6),
                                                              self.transit, self.airmass, self.data)
-        print(type(self.airmass))
         if np.ndim(self.airmass) == 2:
-            print(type(self.data))
-            print(type(self.transit))
             try:
                 detrended = np.asnumpy(np.array(self.data) / np.array(self.transit))
-            except AttributeError:
-                detrended = self.data / self.transit
-            print(type(detrended))
-            print(type(self.gw))
-            print(type(self.nearest))
-            self.wf = weightedflux(detrended, self.gw, self.nearest)
-            print(type(self.wf))
-            print(type(self.dataerr))
-            try:
+                self.wf = np.asnumpy(weightedflux(np.array(detrended), np.array(self.gw), np.array(self.nearest)))
                 self.model = np.asnumpy(np.array(self.transit) * np.array(self.wf))
                 self.detrended = np.asnumpy(np.array(self.data) / np.array(self.wf))
                 self.detrendederr = np.asnumpy(np.array(self.dataerr) / np.array(self.wf))
             except AttributeError:
+                detrended = self.data / self.transit
+                self.wf = weightedflux(detrended, self.gw, self.nearest)
                 self.model = self.transit * self.wf
                 self.detrended = self.data / self.wf
                 self.detrendederr = self.dataerr / self.wf
         else:
-            print(type(self.parameters['a1']))
-            print(type(self.parameters.get('a2', 0)))
-            print(type(self.airmass))
+
             try:
                 self.airmass_model = np.asnumpy(self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * np.array(self.airmass)))
-            except AttributeError:
-                self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * self.airmass)
-            print(type(self.airmass_model))
-            print(type(self.transit))
-            try:
                 self.model = np.asnumpy(np.array(self.transit) * np.array(self.airmass_model))
-            except AttributeError:
-                self.model = self.transit * self.airmass_model
-            print(type(self.model))
-            print(type(self.data))
-            try:
                 self.detrended = np.asnumpy(np.array(self.data) / np.array(self.airmass_model))
-            except AttributeError:
-                self.detrended = self.data / self.airmass_model
-            print(type(self.dataerr))
-            try:
                 self.detrendederr = np.asnumpy(np.array(self.dataerr) / np.array(self.airmass_model))
             except AttributeError:
+                self.airmass_model = self.parameters['a1'] * np.exp(self.parameters.get('a2', 0) * self.airmass)
+                self.model = self.transit * self.airmass_model
+                self.detrended = self.data / self.airmass_model
                 self.detrendederr = self.dataerr / self.airmass_model
 
         try:
@@ -357,8 +325,8 @@ class lc_fitter(object):
 
         # test for partial transit
         try:
-            newtime = np.linspace(np.array(self.parameters['tmid']) - 0.2, np.array(self.parameters['tmid']) + 0.2, 10000)
-            newtran = transit(np.asnumpy(newtime), self.parameters)
+            newtime = np.asnumpy(np.linspace(np.array(self.parameters['tmid']) - 0.2, np.array(self.parameters['tmid']) + 0.2, 10000))
+            newtran = transit(newtime, self.parameters)
             masktran = np.array(newtran) < 1
             newdur = np.asnumpy(np.diff(newtime).mean() * masktran.sum())
         except AttributeError:
@@ -371,10 +339,9 @@ class lc_fitter(object):
         self.duration_expected = newdur
 
     def fit_nested(self):
-        print('starting fit_nested()')
         freekeys = list(self.bounds.keys())
-        boundarray = np.array([self.bounds[k] for k in freekeys])
-        bounddiff = np.diff(boundarray, 1).reshape(-1)
+        boundarray = np.asnumpy(np.array([self.bounds[k] for k in freekeys]))
+        bounddiff = np.asnumpy(np.diff(np.array(boundarray), 1).reshape(-1))
 
         # alloc data for best fit + error
         self.errors = {}
@@ -386,16 +353,11 @@ class lc_fitter(object):
             for i in range(len(pars)):
                 self.prior[freekeys[i]] = pars[i]
             model = transit(self.time, self.prior)
-            #print(type(model))
-            #print(type(self.prior['a2']))
-            #print(type(self.airmass))
-            #print(type(self.data))
-            #print(type(self.dataerr))
             try:
-                model = np.array(model) * np.exp(self.prior['a2'].item() * np.array(self.airmass))
-                detrend = np.array(self.data) / model  # used to estimate a1
-                model *= np.median(detrend)
-                return -0.5 * np.sum(((np.array(self.data) - model) / np.array(self.dataerr)) ** 2).item()
+                model = np.asnumpy(np.array(model) * np.exp(self.prior['a2'].item() * np.array(self.airmass)))
+                detrend = self.data / model  # used to estimate a1
+                model = np.asnumpy(np.array(model) * np.median(np.array(detrend)))
+                return -0.5 * np.sum(((np.array(self.data) - np.array(model)) / np.array(self.dataerr)) ** 2).item()
             except AttributeError:
                 model *= np.exp(self.prior['a2'] * self.airmass)
                 detrend = self.data / model  # used to estimate a1
@@ -404,32 +366,24 @@ class lc_fitter(object):
 
         def prior_transform(upars):
             # transform unit cube to prior volume
-            try:
-                return np.asnumpy(boundarray[:,0] + bounddiff*np.array(upars))
-            except AttributeError:
-                return boundarray[:, 0] + bounddiff * upars
+            return boundarray[:, 0] + bounddiff * upars
 
         try:
             self.ns_type = 'ultranest'
-            print('starting ultranest')
             test = ReactiveNestedSampler(freekeys, loglike, prior_transform)
 
-            print('running ultranest')
             noop = lambda *args, **kwargs: None
             if self.verbose is True:
                 self.results = test.run(max_ncalls=int(self.max_ncalls))
             else:
                 self.results = test.run(max_ncalls=int(self.max_ncalls), show_status=False, viz_callback=noop)
-            print('done ultranest')
 
-            print('starting the freekeys')
             for i, key in enumerate(freekeys):
                 self.parameters[key] = self.results['maximum_likelihood']['point'][i]
                 self.errors[key] = self.results['posterior']['stdev'][i]
                 self.quantiles[key] = [
                     self.results['posterior']['errlo'][i],
                     self.results['posterior']['errup'][i]]
-            print('done the freekeys')
         except NameError:
             self.ns_type = 'dynesty'
             dsampler = dynesty.DynamicNestedSampler(loglike, prior_transform, ndim=len(freekeys),
@@ -441,13 +395,22 @@ class lc_fitter(object):
             tests = [copy.deepcopy(self.prior) for i in range(5)]
 
             # Derive kernel density estimate for best fit
-            weights = np.exp(self.results.logwt - self.results.logz[-1])
+            try:
+                weights = np.exp(self.results.logwt - self.results.logz[-1])
+            except AttributeError:
+                weights = np.asnumpy(np.exp(np.array(self.results.logwt) - np.array(self.results.logz[-1])))
             samples = self.results['samples']
             logvol = self.results['logvol']
             wt_kde = gaussian_kde(resample_equal(-logvol, weights))  # KDE
-            logvol_grid = np.linspace(logvol[0], logvol[-1], 1000)  # resample
+            try:
+                logvol_grid = np.asnumpy(np.linspace(np.array(logvol[0]), np.array(logvol[-1]), 1000))  # resample
+            except AttributeError:
+                logvol_grid = np.linspace(logvol[0], logvol[-1], 1000)  # resample
             wt_grid = wt_kde.pdf(-logvol_grid)  # evaluate KDE PDF
-            self.weights = np.interp(-logvol, -logvol_grid, wt_grid)  # interpolate
+            try:
+                self.weights = np.asnumpy(np.interp(np.array(-logvol), np.array(-logvol_grid), np.array(wt_grid)))  # interpolate
+            except AttributeError:
+                self.weights = np.interp(-logvol, -logvol_grid, wt_grid)  # interpolate
 
             # errors + final values
             mean, cov = dynesty.utils.mean_and_cov(self.results.samples, weights)
@@ -457,9 +420,14 @@ class lc_fitter(object):
                 tests[0][freekeys[i]] = mean[i]
                 tests[1][freekeys[i]] = mean2[i]
 
-                counts, bins = np.histogram(samples[:, i], bins=100, weights=weights)
-                mi = np.argmax(counts)
-                tests[4][freekeys[i]] = bins[mi] + 0.5 * np.mean(np.diff(bins))
+                try:
+                    counts, bins = np.histogram(np.array(samples[:, i]), bins=100, weights=weights)
+                    mi = np.argmax(counts)
+                    tests[4][freekeys[i]] = np.asnumpy(bins[mi] + 0.5 * np.mean(np.diff(bins)))
+                except AttributeError:
+                    counts, bins = np.histogram(samples[:, i], bins=100, weights=weights)
+                    mi = np.argmax(counts)
+                    tests[4][freekeys[i]] = bins[mi] + 0.5 * np.mean(np.diff(bins))
 
                 # finds median and +- 2sigma, will vary from mode if non-gaussian
                 self.quantiles[freekeys[i]] = dynesty.utils.quantile(self.results.samples[:, i], [0.025, 0.5, 0.975],
@@ -479,11 +447,18 @@ class lc_fitter(object):
             chis = []
             for i in range(len(tests)):
                 lightcurve = transit(self.time, tests[i])
-                tests[i]['a1'] = mc_a1(tests[i].get('a2', 0), self.errors.get('a2', 1e-6),
+                try:
+                    tests[i]['a1'] = np.asnumpy(mc_a1(np.array(tests[i]).get('a2', 0), np.array(self.errors).get('a2', 1e-6),
+                                       np.array(lightcurve), np.array(self.airmass), np.array(self.data))[0])
+                    airmass = np.asnumpy(np.array(tests[i]['a1']) * np.exp(np.array(tests[i]).get('a2', 0) * np.array(self.airmass)))
+                    residuals = self.data - (lightcurve * airmass)
+                    chis.append(np.sum(np.array(residuals) ** 2))
+                except AttributeError:
+                    tests[i]['a1'] = mc_a1(tests[i].get('a2', 0), self.errors.get('a2', 1e-6),
                                        lightcurve, self.airmass, self.data)[0]
-                airmass = tests[i]['a1'] * np.exp(tests[i].get('a2', 0) * self.airmass)
-                residuals = self.data - (lightcurve * airmass)
-                chis.append(np.sum(residuals ** 2))
+                    airmass = tests[i]['a1'] * np.exp(tests[i].get('a2', 0) * self.airmass)
+                    residuals = self.data - (lightcurve * airmass)
+                    chis.append(np.sum(residuals ** 2))
 
             mi = np.argmin(chis)
             self.parameters = copy.deepcopy(tests[mi])
@@ -528,17 +503,29 @@ class lc_fitter(object):
 
         if phase:
             si = np.argsort(self.phase)
-            bt2, br2, _ = time_bin(self.phase[si] * self.parameters['per'],
+            try:
+                bt2, br2, _ = time_bin(np.array(self.phase[si]) * np.array(self.parameters['per']),
+                                   np.array(self.residuals[si]) / np.median(np.array(self.data)) * 1e2, bin_dt)
+                axs[1].plot(self.phase, self.residuals / np.asnumpy(np.median(self.data)) * 1e2, 'k.', alpha=0.2,
+                        label=r'$\sigma$ = {:.2f} %'.format(np.asnumpy(np.std(np.array(self.residuals) / np.median(np.array(self.data)) * 1e2))))
+                axs[1].plot(np.asnumpy(bt2 / np.array(self.parameters['per'])), np.asnumpy(br2), 'bs', alpha=1, zorder=2)
+            except AttributeError:
+                bt2, br2, _ = time_bin(self.phase[si] * self.parameters['per'],
                                    self.residuals[si] / np.median(self.data) * 1e2, bin_dt)
-            axs[1].plot(self.phase, self.residuals / np.median(self.data) * 1e2, 'k.', alpha=0.2,
+                axs[1].plot(self.phase, self.residuals / np.median(self.data) * 1e2, 'k.', alpha=0.2,
                         label=r'$\sigma$ = {:.2f} %'.format(np.std(self.residuals / np.median(self.data) * 1e2)))
-            axs[1].plot(bt2 / self.parameters['per'], br2, 'bs', alpha=1, zorder=2)
+                axs[1].plot(bt2 / self.parameters['per'], br2, 'bs', alpha=1, zorder=2)
             axs[1].set_xlim([min(self.phase), max(self.phase)])
             axs[1].set_xlabel("Phase", fontsize=14)
 
             si = np.argsort(self.phase)
-            bt2, bf2, bs = time_bin(self.phase[si] * self.parameters['per'], self.detrended[si], bin_dt)
-            axs[0].errorbar(bt2 / self.parameters['per'], bf2, yerr=bs, alpha=1, zorder=2, color='blue', ls='none',
+            try:
+                bt2, bf2, bs = time_bin(np.array(self.phase[si]) * np.array(self.parameters['per']), np.array(self.detrended[si]), bin_dt)
+                axs[0].errorbar(np.asnumpy(bt2 / np.array(self.parameters['per'])), np.asnumpy(bf2), yerr=np.asnumpy(bs), alpha=1, zorder=2, color='blue', ls='none',
+                            marker='s')
+            except AttributeError:
+                bt2, bf2, bs = time_bin(self.phase[si] * self.parameters['per'], self.detrended[si], bin_dt)
+                axs[0].errorbar(bt2 / self.parameters['per'], bf2, yerr=bs, alpha=1, zorder=2, color='blue', ls='none',
                             marker='s')
             # axs[0].plot(self.phase[si], self.transit[si], 'r-', zorder=3, label=lclabel)
             sii = np.argsort(self.phase_upsample)
@@ -546,18 +533,31 @@ class lc_fitter(object):
             axs[0].set_xlim([min(self.phase), max(self.phase)])
             axs[0].set_xlabel("Phase ", fontsize=14)
         else:
-            bt, br, _ = time_bin(self.time, self.residuals / np.median(self.data) * 1e2, bin_dt)
-            axs[1].plot(self.time, self.residuals / np.median(self.data) * 1e2, 'k.', alpha=0.2,
+            try:
+                bt, br, _ = time_bin(np.array(self.time), np.array(self.residuals) / np.median(np.array(self.data)) * 1e2, bin_dt)
+                axs[1].plot(np.asnumpy(self.time), np.asnumpy(self.residuals / np.median(np.array(self.data))) * 1e2, 'k.', alpha=0.2,
+                        label=r'$\sigma$ = {:.2f} %'.format(np.asnumpy(np.std(np.array(self.residuals) / np.median(np.array(self.data)) * 1e2))))
+                axs[1].plot(np.asnumpy(bt), np.asnumpy(br), 'bs', alpha=1, zorder=2, label=r'$\sigma$ = {:.2f} %'.format(np.asnumpy(np.std(br))))
+            except AttributeError:
+                bt, br, _ = time_bin(self.time, self.residuals / np.median(self.data) * 1e2, bin_dt)
+                axs[1].plot(self.time, self.residuals / np.median(self.data) * 1e2, 'k.', alpha=0.2,
                         label=r'$\sigma$ = {:.2f} %'.format(np.std(self.residuals / np.median(self.data) * 1e2)))
-            axs[1].plot(bt, br, 'bs', alpha=1, zorder=2, label=r'$\sigma$ = {:.2f} %'.format(np.std(br)))
+                axs[1].plot(bt, br, 'bs', alpha=1, zorder=2, label=r'$\sigma$ = {:.2f} %'.format(np.std(br)))
             axs[1].set_xlim([min(self.time), max(self.time)])
             axs[1].set_xlabel("Time [day]", fontsize=14)
 
-            bt, bf, bs = time_bin(self.time, self.detrended, bin_dt)
-            si = np.argsort(self.time)
-            sii = np.argsort(self.time_upsample)
-            axs[0].errorbar(bt, bf, yerr=bs, alpha=1, zorder=2, color='blue', ls='none', marker='s')
-            axs[0].plot(self.time_upsample[sii], self.transit_upsample[sii], 'r-', zorder=3, label=lclabel)
+            try:
+                bt, bf, bs = time_bin(np.array(self.time), np.array(self.detrended), bin_dt)
+                si = np.argsort(np.array(self.time))
+                sii = np.argsort(np.array(self.time_upsample))
+                axs[0].errorbar(np.asnumpy(bt), np.asnumpy(bf), yerr=np.asnumpy(bs), alpha=1, zorder=2, color='blue', ls='none', marker='s')
+                axs[0].plot(np.asnumpy(self.time_upsample[sii]), np.asnumpy(self.transit_upsample[sii]), 'r-', zorder=3, label=lclabel)
+            except AttributeError:
+                bt, bf, bs = time_bin(self.time, self.detrended, bin_dt)
+                si = np.argsort(self.time)
+                sii = np.argsort(self.time_upsample)
+                axs[0].errorbar(bt, bf, yerr=bs, alpha=1, zorder=2, color='blue', ls='none', marker='s')
+                axs[0].plot(self.time_upsample[sii], self.transit_upsample[sii], 'r-', zorder=3, label=lclabel)
             axs[0].set_xlim([min(self.time), max(self.time)])
             axs[0].set_xlabel("Time [day]", fontsize=14)
 
@@ -571,9 +571,14 @@ class lc_fitter(object):
     def plot_triangle(self):
         if self.ns_type == 'ultranest':
             ranges = []
-            mask1 = np.ones(len(self.results['weighted_samples']['logl']), dtype=bool)
-            mask2 = np.ones(len(self.results['weighted_samples']['logl']), dtype=bool)
-            mask3 = np.ones(len(self.results['weighted_samples']['logl']), dtype=bool)
+            try:
+                mask1 = np.asnumpy(np.ones(len(self.results['weighted_samples']['logl']), dtype=bool))
+                mask2 = np.asnumpy(np.ones(len(self.results['weighted_samples']['logl']), dtype=bool))
+                mask3 = np.asnumpy(np.ones(len(self.results['weighted_samples']['logl']), dtype=bool))
+            except AttributeError:
+                mask1 = np.ones(len(self.results['weighted_samples']['logl']), dtype=bool)
+                mask2 = np.ones(len(self.results['weighted_samples']['logl']), dtype=bool)
+                mask3 = np.ones(len(self.results['weighted_samples']['logl']), dtype=bool)
             titles = []
             labels = []
             flabels = {
@@ -621,7 +626,32 @@ class lc_fitter(object):
                     (self.results['weighted_samples']['points'][:, i] < (self.parameters[key] + 2 * self.errors[key]))
 
             chi2 = self.results['weighted_samples']['logl'] * -2
-            fig = corner(self.results['weighted_samples']['points'],
+            try:
+                fig = corner(self.results['weighted_samples']['points'],
+                         labels=labels,
+                         bins=int(np.asnumpy(np.sqrt(np.array(self.results['samples']).shape[0]))),
+                         range=ranges,
+                         # quantiles=(0.1, 0.84),
+                         plot_contours=True,
+                         levels=[np.asnumpy(np.percentile(np.array(chi2[mask1]), 95)), np.asnumpy(np.percentile(np.array(chi2[mask2]), 95)),
+                                 np.asnumpy(np.percentile(np.array(chi2[mask3]), 95))],
+                         plot_density=False,
+                         titles=titles,
+                         data_kwargs={
+                             'c': chi2,
+                             'vmin': np.asnumpy(np.percentile(np.array(chi2[mask3]), 1)),
+                             'vmax': np.asnumpy(np.percentile(np.array(chi2[mask3]), 95)),
+                             'cmap': 'viridis'
+                         },
+                         label_kwargs={
+                             'labelpad': 15,
+                         },
+                         hist_kwargs={
+                             'color': 'black',
+                         }
+                         )
+            except AttributeError:
+                fig = corner(self.results['weighted_samples']['points'],
                          labels=labels,
                          bins=int(np.sqrt(self.results['samples'].shape[0])),
                          range=ranges,
@@ -685,7 +715,10 @@ class glc_fitter(lc_fitter):
         for i in range(nobs):
             lfreekeys.append(list(self.local_bounds[i].keys()))
             boundarray.extend([self.local_bounds[i][k] for k in lfreekeys[-1]])
-        boundarray = np.array(boundarray)
+        try:
+            boundarray = np.asnumpy(np.array(boundarray))
+        except AttributeError:
+            boundarray = np.array(boundarray)
 
         # fit individual light curves to constrain priors
         if self.individual_fit:
@@ -705,9 +738,15 @@ class glc_fitter(lc_fitter):
                 if 'tmid' in mybounds:
                     # find the closet mid transit time to the last observation
                     phase = (self.lc_data[i]['time'][-1] - self.lc_data[i]['priors']['tmid']) / self.lc_data[i]['priors']['per']
-                    nepochs = np.round(phase)
+                    try:
+                        nepochs = np.asnumpy(np.round(np.array(phase)))
+                    except AttributeError:
+                        nepochs = np.round(phase)
                     newtmid = self.lc_data[i]['priors']['tmid'] + nepochs * self.lc_data[i]['priors']['per']
-                    err = np.diff(mybounds['tmid'])[0]/2.
+                    try:
+                        err = np.asnumpy(np.diff(mybounds['tmid'])[0]/2.)
+                    except AttributeError:
+                        err = np.diff(mybounds['tmid'])[0]/2.
                     mybounds['tmid'] = [newtmid - err, newtmid + err ]
 
                 # fit individual light curve
@@ -742,17 +781,30 @@ class glc_fitter(lc_fitter):
                         boundarray[j+ti+len(gfreekeys),0] = max(0,myfit.parameters[key] - 5*myfit.errors[key])
 
                 # print name and stdev of residuals
-                mint = np.min(self.lc_data[i]['time'])
-                maxt = np.max(self.lc_data[i]['time'])
                 try:
-                    print(f"{self.lc_data[i]['name']} & {Time(mint,format='jd').isot} & {Time(maxt,format='jd').isot} & {np.std(myfit.residuals)} & {len(self.lc_data[i]['time'])}")
+                    mint = np.min(np.array(self.lc_data[i]['time']))
+                    maxt = np.max(np.array(self.lc_data[i]['time']))
+                except AttributeError:
+                    mint = np.min(self.lc_data[i]['time'])
+                    maxt = np.max(self.lc_data[i]['time'])
+                try:
+                    try:
+                        print(f"{self.lc_data[i]['name']} & {Time(mint,format='jd').isot} & {Time(maxt,format='jd').isot} & {np.asnumpy(np.std(np.array(myfit.residuals)))} & {len(self.lc_data[i]['time'])}")
+                    except AttributeError:
+                        print(f"{self.lc_data[i]['name']} & {Time(mint,format='jd').isot} & {Time(maxt,format='jd').isot} & {np.std(myfit.residuals)} & {len(self.lc_data[i]['time'])}")
                 except:
-                    print(f"{self.lc_data[i]['name']} & {mint} & {maxt} & {np.std(myfit.residuals)} & {len(self.lc_data[i]['time'])}")
+                    try:
+                        print(f"{self.lc_data[i]['name']} & {mint} & {maxt} & {np.std(myfit.residuals)} & {len(self.lc_data[i]['time'])}")
+                    except AttributeError:
+                        print(f"{self.lc_data[i]['name']} & {mint} & {maxt} & {np.asnumpy(np.std(np.array(myfit.residuals)))} & {len(self.lc_data[i]['time'])}")
 
                 del(myfit)
 
         # transform unit cube to prior volume
-        bounddiff = np.diff(boundarray,1).reshape(-1)
+        try:
+            bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
+        except AttributeError:
+            bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
         def prior_transform(upars):
             return (boundarray[:,0] + bounddiff*upars)
 
@@ -773,12 +825,21 @@ class glc_fitter(lc_fitter):
 
                 # compute model
                 model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
-                model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
+                try:
+                    model = np.asnumpy(np.array(model) * np.exp(np.array(self.lc_data[i]['priors']['a2'])*p.array(self.lc_data[i]['airmass'])))
+                except AttributeError:
+                    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
                 detrend = self.lc_data[i]['flux']/model
-                model *= np.mean(detrend)
+                try:
+                    model = np.asnumpy(np.array(model) * np.mean(np.array(detrend)))
+                except AttributeError:
+                    model *= np.mean(detrend)
 
                 # add to chi2
-                chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+                try:
+                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'])-np.array(model))/np.array(self.lc_data[i]['ferr']))**2 ))
+                except AttributeError:
+                    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
 
             # maximization metric for nested sampling
             return -0.5*chi2
@@ -844,9 +905,15 @@ class glc_fitter(lc_fitter):
 
             # solve for a1
             model = transit(self.lc_data[n]['time'], self.lc_data[n]['priors'])
-            airmass = np.exp(self.lc_data[n]['airmass']*self.lc_data[n]['priors']['a2'])
+            try:
+                airmass = np.asnumpy(np.exp(np.array(self.lc_data[n]['airmass'])*np.array(self.lc_data[n]['priors']['a2'])))
+            except AttributeError:
+                airmass = np.exp(self.lc_data[n]['airmass']*self.lc_data[n]['priors']['a2'])
             detrend = self.lc_data[n]['flux']/(model*airmass)
-            self.lc_data[n]['priors']['a1'] = np.mean(detrend)
+            try:
+                self.lc_data[n]['priors']['a1'] = np.asnumpy(np.mean(np.array(detrend)))
+            except AttributeError:
+                self.lc_data[n]['priors']['a1'] = np.mean(detrend)
             self.lc_data[n]['residuals'] = self.lc_data[n]['flux'] - model*airmass*self.lc_data[n]['priors']['a1']
             self.lc_data[n]['detrend'] = self.lc_data[n]['flux']/(airmass*self.lc_data[n]['priors']['a1'])
 
@@ -858,8 +925,12 @@ class glc_fitter(lc_fitter):
 
         # create an average value from all the local fits
         if rprs_in_local:
-            self.parameters['rprs'] = np.mean(local_rprs)
-            self.errors['rprs'] = np.std(local_rprs)
+            try:
+                self.parameters['rprs'] = np.mean(local_rprs)
+                self.errors['rprs'] = np.std(local_rprs)
+            except AttributeError:
+                self.parameters['rprs'] = np.asnumpy(np.mean(np.array(local_rprs)))
+                self.errors['rprs'] = np.asnumpy(np.std(np.array(local_rprs)))
 
         #import pdb; pdb.set_trace()
 
@@ -1024,13 +1095,19 @@ class glc_fitter(lc_fitter):
 
             # plot binned data
             print('plotting binned data')
-            bt2, bf2, bs = time_bin(phase[si]*self.lc_data[n]['priors']['per'], self.lc_data[n]['detrend'][si], bin_dt)
+            try:
+                bt2, bf2, bs = time_bin(np.array(phase[si])*np.array(self.lc_data[n]['priors']['per']), np.array(self.lc_data[n]['detrend'][si]), bin_dt)
+            except AttributeError:
+                bt2, bf2, bs = time_bin(phase[si]*self.lc_data[n]['priors']['per'], self.lc_data[n]['detrend'][si], bin_dt)
 
             if limit_legend:
-                axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker)
+                try:
+                    axs[0].errorbar(np.asnumpy(bt2)/self.lc_data[n]['priors']['per'],np.asnumpy(bf2),yerr=np.asnumpy(bs),alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker)
+                except AttributeError:
+                    axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker)
             else:
                 try:
-                    axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
+                    axs[0].errorbar(np.asnumpy(bt2)/self.lc_data[n]['priors']['per'],np.asnumpy(bf2),yerr=np.asnumpy(bs),alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
                                 label=r'{}: {:.2f} %'.format(self.lc_data[n].get('name',''),np.asnumpy(np.std(np.array(self.lc_data[n]['residuals'])/np.median(np.array(self.lc_data[n]['flux']))*1e2))))
                 except AttributeError:
                     axs[0].errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker,
@@ -1061,11 +1138,12 @@ class glc_fitter(lc_fitter):
         phase = get_phase(alldata['time'], self.parameters['per'], self.lc_data[n]['priors']['tmid'])
         try:
             si = np.argsort(np.array(phase))
-            bt, br, _ = time_bin(phase[si]*self.parameters['per'], alldata['residuals'][si]/np.asnumpy(np.median(np.array(alldata)['flux'])), 2*bin_dt)
+            bt, br, _ = time_bin(np.aRRAY(phase[si])*np.array(self.parameters['per']), np.array(alldata['residuals'][si])/np.median(np.array(alldata)['flux']), 2*bin_dt)
+            bt, bf, bs = time_bin(phase[si]*self.parameters['per'], alldata['detrend'][si], 2*bin_dt)
         except AttributeError:
             si = np.argsort(phase)
             bt, br, _ = time_bin(phase[si]*self.parameters['per'], alldata['residuals'][si]/np.median(alldata['flux']), 2*bin_dt)
-        bt, bf, bs = time_bin(phase[si]*self.parameters['per'], alldata['detrend'][si], 2*bin_dt)
+            bt, bf, bs = time_bin(phase[si]*self.parameters['per'], alldata['detrend'][si], 2*bin_dt)
 
         try:
             axs[0].errorbar(bt/self.parameters['per'],bf,yerr=bs,alpha=1,zorder=2,color='white',ls='none',marker='o',ms=15,
@@ -1182,7 +1260,7 @@ class glc_fitter(lc_fitter):
             try:
                 si = np.argsort(np.array(phase))
                 bt2, br2, _ = time_bin(phase[si]*self.parameters['per'], self.lc_data[n]['residuals'][si]/np.asnumpy(np.median(np.array(self.lc_data[n]['flux'])))*1e2, bin_dt)
-            except AttributError:
+            except AttributeError:
                 si = np.argsort(phase)
                 bt2, br2, _ = time_bin(phase[si]*self.parameters['per'], self.lc_data[n]['residuals'][si]/np.median(self.lc_data[n]['flux'])*1e2, bin_dt)
             
@@ -1190,34 +1268,38 @@ class glc_fitter(lc_fitter):
             try:
                 ax.errorbar(phase, self.lc_data[n]['detrend']-n*dy, yerr=np.asnumpy(np.std(np.array(self.lc_data[n]['residuals']))/np.median(np.array(self.lc_data[n]['flux']))), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=0.25)
-            except AttributError:
+            except AttributeError:
                 ax.errorbar(phase, self.lc_data[n]['detrend']-n*dy, yerr=np.std(self.lc_data[n]['residuals'])/np.median(self.lc_data[n]['flux']), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=0.25)
 
             # plot binned data
-            bt2, bf2, bs = time_bin(phase[si]*self.lc_data[n]['priors']['per'], self.lc_data[n]['detrend'][si]-n*dy, bin_dt)
-            ax.errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker)
+            try:
+                bt2, bf2, bs = time_bin(np.array(phase[si])*np.array(self.lc_data[n]['priors']['per']), np.array(self.lc_data[n]['detrend'][si])-n*dy, bin_dt)
+                ax.errorbar(np.asnumpy(bt2)/self.lc_data[n]['priors']['per'],np.asnumpy(bf2),yerr=np.asnumpy(bs),alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker)
+            except AttributeError:
+                bt2, bf2, bs = time_bin(phase[si]*self.lc_data[n]['priors']['per'], self.lc_data[n]['detrend'][si]-n*dy, bin_dt)
+                ax.errorbar(bt2/self.lc_data[n]['priors']['per'],bf2,yerr=bs,alpha=1,zorder=2,color=ncolor,ls='none',marker=nmarker)
 
             # replace min and max for upsampled lc model
             minp = min(minp, min(phase))
             maxp = max(maxp, max(phase))
             try:
                 min_std = min(min_std, np.asnumpy(np.std(np.array(self.lc_data[n]['residuals'])/np.median(np.array(self.lc_data[n]['flux'])))))
-            except AttributError:
+            except AttributeError:
                 min_std = min(min_std, np.std(self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])))
 
             # best fit model
             try:
                 self.time_upsample = np.asnumpy(np.linspace(minp*np.array(self.parameters['per'])+np.array(self.parameters['tmid']), 
                                             maxp*np.array(self.parameters['per'])+np.array(self.parameters['tmid']), 10000))
-            except AttributError:   
+            except AttributeError:   
                 self.time_upsample = np.linspace(minp*self.parameters['per']+self.parameters['tmid'], 
                                             maxp*self.parameters['per']+self.parameters['tmid'], 10000)
             self.transit_upsample = transit(self.time_upsample, self.parameters)
             self.phase_upsample = get_phase(self.time_upsample, self.parameters['per'], self.parameters['tmid'])
             try:
                 sii = np.argsort(np.array(self.phase_upsample))
-            except AttributError:  
+            except AttributeError:  
                 sii = np.argsort(self.phase_upsample)
             ax.plot(self.phase_upsample[sii], self.transit_upsample[sii]-n*dy, ls='-', color=ncolor, zorder=3, label=self.lc_data[n].get('name',''))
 
