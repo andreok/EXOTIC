@@ -47,6 +47,7 @@ import json
 import logging
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, NullLocator, ScalarFormatter
+from numba import jit
 try:
     if 'np' in globals():
         del globals()['np']
@@ -114,9 +115,14 @@ def plot_image(filename, save=False, bg_min=60, bg_max=99):
     # loop through each group to find position
     for i in range(1,labeli[-1]+1):
         imask = labels == i
-        yc,xc = np.argwhere(imask).mean(0)
-        bad_pix['x'].append(xc)
-        bad_pix['y'].append(yc)
+        try:
+            yc,xc = np.argwhere(imask).mean(0)
+            bad_pix['x'].append(np.asnumpy(xc))
+            bad_pix['y'].append(np.asnumpy(yc))
+        except AttributeError:
+            yc,xc = np.argwhere(imask).mean(0)
+            bad_pix['x'].append(xc)
+            bad_pix['y'].append(yc)
         bad_pix['value'].append(cdata[imask].mean())
 
     pprint(bad_pix)
@@ -131,7 +137,10 @@ def plot_image(filename, save=False, bg_min=60, bg_max=99):
     fig.add_tools(FreehandDrawTool(renderers=[r]))
 
     # set up a colobar + data range
-    color_mapper = LogColorMapper(palette="Cividis256", low=np.percentile(data, bg_min), high=np.percentile(data, bg_max))
+    try:
+        color_mapper = LogColorMapper(palette="Cividis256", low=np.asnumpy(np.percentile(np.array(data), bg_min)), high=np.asnumpy(np.percentile(np.array(data), bg_max)))
+    except AttributeError:
+        color_mapper = LogColorMapper(palette="Cividis256", low=np.percentile(data, bg_min), high=np.percentile(data, bg_max))
 
     # must give a vector of image data for image parameter
     fig.image(
@@ -183,18 +192,29 @@ def corner(xs, bins=20, range=None, weights=None, color="k", hist_bin_factor=1,
             pass
 
     # Deal with 1D sample lists.
-    xs = np.atleast_1d(xs)
-    if len(xs.shape) == 1:
-        xs = np.atleast_2d(xs)
-    else:
-        assert len(xs.shape) == 2, "The input sample array must be 1- or 2-D."
-        xs = xs.T
+    try:
+        xs = np.atleast_1d(np.array(xs))
+        if len(xs.shape) == 1:
+            xs = np.atleast_2d(np.array(xs))
+        else:
+            assert len(xs.shape) == 2, "The input sample array must be 1- or 2-D."
+            xs = xs.T
+    except AttributeError:
+        xs = np.atleast_1d(xs)
+        if len(xs.shape) == 1:
+            xs = np.atleast_2d(xs)
+        else:
+            assert len(xs.shape) == 2, "The input sample array must be 1- or 2-D."
+            xs = xs.T
     assert xs.shape[0] <= xs.shape[1], "I don't believe that you want more " \
                                        "dimensions than samples!"
 
     # Parse the weight array.
     if weights is not None:
-        weights = np.asarray(weights)
+        try:
+            weights = np.asnumpy(np.asarray(weights))
+        except AttributeError:
+            weights = np.asarray(weights)
         if weights.ndim != 1:
             raise ValueError("Weights must be 1-D")
         if xs.shape[1] != weights.shape[0]:
@@ -208,9 +228,18 @@ def corner(xs, bins=20, range=None, weights=None, color="k", hist_bin_factor=1,
         else:
             range = [[x.min(), x.max()] for x in xs]
             # Check for parameters that never change.
-            m = np.array([e[0] == e[1] for e in range], dtype=bool)
-            if np.any(m):
-                raise ValueError(("It looks like the parameter(s) in "
+            try:
+                m = np.asnumpy(np.array([e[0] == e[1] for e in np.array(range)], dtype=bool))
+                if np.any(m):
+                    raise ValueError(("It looks like the parameter(s) in "
+                                  "column(s) {0} have no dynamic range. "
+                                  "Please provide a `range` argument.")
+                                 .format(", ".join(map(
+                                     "{0}".format, np.asnumpy(np.arange(len(m))[m])))))
+            except AttributeError:
+                m = np.array([e[0] == e[1] for e in range], dtype=bool)
+                if np.any(m):
+                    raise ValueError(("It looks like the parameter(s) in "
                                   "column(s) {0} have no dynamic range. "
                                   "Please provide a `range` argument.")
                                  .format(", ".join(map(
@@ -261,7 +290,10 @@ def corner(xs, bins=20, range=None, weights=None, color="k", hist_bin_factor=1,
         fig, axes = plt.subplots(K, K, figsize=(dim, dim))
     else:
         try:
-            axes = np.array(fig.axes).reshape((K, K))
+            try:
+                axes = np.asnumpy(np.array(fig.axes).reshape((K, K)))
+            except AttributeError:
+                axes = np.array(fig.axes).reshape((K, K))
         except:
             raise ValueError("Provided figure has {0} axes, but data has "
                              "dimensions K={1}".format(len(fig.axes), K))
@@ -299,11 +331,18 @@ def corner(xs, bins=20, range=None, weights=None, color="k", hist_bin_factor=1,
         else:
             if gaussian_filter is None:
                 raise ImportError("Please install scipy for smoothing")
-            n, b = np.histogram(x, bins=bins[i], weights=weights,
+            try:
+                n, b = np.histogram(np.array(x), bins=bins[i], weights=np.array(weights),
+                                range=np.sort(np.array(range[i])))
+                n = gaussian_filter(np.asnumpy(n), smooth1d)
+                x0 = np.asnumpy(np.array(list(zip(b[:-1], b[1:]))).flatten())
+                y0 = np.asnumpy(np.array(list(zip(n, n))).flatten())
+            except AttributeError:
+                n, b = np.histogram(x, bins=bins[i], weights=weights,
                                 range=np.sort(range[i]))
-            n = gaussian_filter(n, smooth1d)
-            x0 = np.array(list(zip(b[:-1], b[1:]))).flatten()
-            y0 = np.array(list(zip(n, n))).flatten()
+                n = gaussian_filter(n, smooth1d)
+                x0 = np.array(list(zip(b[:-1], b[1:]))).flatten()
+                y0 = np.array(list(zip(n, n))).flatten()
             ax.plot(x0, y0, **hist_kwargs)
 
         if truths is not None and truths[i] is not None:
@@ -436,7 +475,8 @@ def corner(xs, bins=20, range=None, weights=None, color="k", hist_bin_factor=1,
 
     return fig
 
-def quantile(x, q, weights=None):
+@jit(nopython=True)
+def quantile(x, q, weights=None): # assuming only cupy arrays, if GPU
     """
     Compute sample quantiles with support for weighted samples.
 
@@ -514,11 +554,18 @@ def hist2d(x, y, bins=20, range=None, levels=[2],
         
         try: # contour
             # approx posterior + smooth
-            xg, yg = np.meshgrid( np.linspace(x[mask].min(),x[mask].max(),256), np.linspace(y[mask].min(),y[mask].max(),256) )
-            cg = griddata(np.vstack([x[mask],y[mask]]).T, data_kwargs['c'][mask], (xg,yg), method='nearest', rescale=True)
-            scg = gaussian_filter(cg,sigma=15)
+            try:
+                xg, yg = np.meshgrid( np.linspace(x[mask].min(),x[mask].max(),256), np.linspace(y[mask].min(),y[mask].max(),256) )
+                cg = griddata(np.vstack([x[mask],y[mask]]).T, data_kwargs['c'][mask], (xg,yg), method='nearest', rescale=True)
+                scg = gaussian_filter(cg,sigma=15)
 
-            ax.contour(xg, yg, scg*np.nanmin(cg)/np.nanmin(scg), np.sort(levels), **contour_kwargs, vmin=data_kwargs['vmin'], vmax=data_kwargs['vmax'])        
+                ax.contour(np.asnumpy(xg), np.asnumpy(yg), scg*np.asnumpy(np.nanmin(cg))/np.asnumpy(np.nanmin(scg)), np.asnumpy(np.sort(np.array(levels))), **contour_kwargs, vmin=data_kwargs['vmin'], vmax=data_kwargs['vmax'])        
+            except AttributeError:
+                xg, yg = np.meshgrid( np.linspace(x[mask].min(),x[mask].max(),256), np.linspace(y[mask].min(),y[mask].max(),256) )
+                cg = griddata(np.vstack([x[mask],y[mask]]).T, data_kwargs['c'][mask], (xg,yg), method='nearest', rescale=True)
+                scg = gaussian_filter(cg,sigma=15)
+
+                ax.contour(xg, yg, scg*np.nanmin(cg)/np.nanmin(scg), np.sort(levels), **contour_kwargs, vmin=data_kwargs['vmin'], vmax=data_kwargs['vmax'])        
         except Exception as err:
             print(err)
             print("contour plotting failed")
