@@ -102,7 +102,6 @@ def transit(times, values):
 def get_phase(times, per, tmid):
     return (times - tmid + 0.25 * per) / per % 1 - 0.25
 
-@jit(nopython=True)
 def mc_a1(m_a2, sig_a2, transit, airmass, data, n=10000): # assuming only cupy arrays, if GPU
     a2 = np.random.normal(m_a2, sig_a2, n)
     model = transit * np.exp(np.repeat(np.expand_dims(a2, 0), airmass.shape[0], 0).T * airmass)
