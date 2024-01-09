@@ -564,7 +564,7 @@ class rv_fitter(lc_fitter):
             fn = (1-self.data[0]['priors']['ecc']**2)/(1+self.data[0]['priors']['ecc']*np.cos(omega))**2
             integral = np.asnumpy(np.trapz(fn,np.array(omega))*dt)
             tperi = newtime[mide]-integral
-            midp = np.argmin(np.abs(np.array(newtime)-np.array(tperi))))
+            midp = np.argmin(np.abs(np.array(newtime)-np.array(tperi)))
             tperi2 = newtime[np.argmin(distance)]
             midp2 = np.argmin(np.abs(np.array(newtime)-np.array(tperi2))) # numerical solution
         except AttributeError:
