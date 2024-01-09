@@ -1162,7 +1162,7 @@ class glc_fitter(lc_fitter):
         print('plotting best fit model')
         try:
             self.time_upsample = np.asnumpy(np.linspace(minp*np.array(self.parameters['per'])+np.array(self.parameters['tmid']), 
-                                         maxp*np.array(self.parameters['per'])+np.array(self.parameters['tmid']), 10000)))
+                                         maxp*np.array(self.parameters['per'])+np.array(self.parameters['tmid']), 10000))
         except AttributeError:
             self.time_upsample = np.linspace(minp*self.parameters['per']+self.parameters['tmid'], 
                                          maxp*self.parameters['per']+self.parameters['tmid'], 10000)
