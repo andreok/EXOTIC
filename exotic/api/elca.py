@@ -123,7 +123,6 @@ def round_to_2(*args):
             roundval = 1
     return round(x, roundval)
 
-@jit(nopython=True)
 # average data into bins of dt from start to finish
 def time_bin(time, flux, dt=1. / (60 * 24)): # assuming only cupy arrays, if GPU
     bins = int(np.floor((max(time) - min(time)) / dt))
