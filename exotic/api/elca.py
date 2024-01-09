@@ -837,7 +837,7 @@ class glc_fitter(lc_fitter):
 
                 # add to chi2
                 try:
-                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'])-np.array(model))/np.array(self.lc_data[i]['ferr']))**2 ))
+                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'])-np.array(model))/np.array(self.lc_data[i]['ferr']))**2 )
                 except AttributeError:
                     chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
 
