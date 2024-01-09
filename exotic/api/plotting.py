@@ -47,13 +47,7 @@ import json
 import logging
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, NullLocator, ScalarFormatter
-from numba import jit
-try:
-    if 'np' in globals():
-        del globals()['np']
-    import cupy as np
-except ImportError:
-    import numpy as np
+import numpy as np
 from pprint import pprint
 from scipy.interpolate import griddata
 from scipy.ndimage import label, gaussian_filter
