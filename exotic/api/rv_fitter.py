@@ -216,7 +216,7 @@ class rv_fitter(lc_fitter):
 
         # transform unit cube to prior volume
         try:
-            bounddiff = np.array(np.diff(np.array(boundarray),1).reshape(-1))
+            bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
         except AttributeError:
             bounddiff = np.diff(boundarray,1).reshape(-1)
         def prior_transform(upars):
