@@ -46,6 +46,7 @@ from io import BytesIO
 import json
 import logging
 import matplotlib.pyplot as plt
+from numba import jit
 from matplotlib.ticker import MaxNLocator, NullLocator, ScalarFormatter
 import numpy as np
 from pprint import pprint
