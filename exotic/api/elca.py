@@ -512,7 +512,7 @@ class lc_fitter(object):
             try:
                 bt2, br2, _ = time_bin(np.array(self.phase[si]) * np.array(self.parameters['per']),
                                    np.array(self.residuals[si]) / np.median(np.array(self.data)) * 1e2, bin_dt)
-                axs[1].plot(self.phase, self.residuals / np.asnumpy(np.median(self.data)) * 1e2, 'k.', alpha=0.2,
+                axs[1].plot(self.phase, self.residuals / np.asnumpy(np.median(np.array(self.data))) * 1e2, 'k.', alpha=0.2,
                         label=r'$\sigma$ = {:.2f} %'.format(np.asnumpy(np.std(np.array(self.residuals) / np.median(np.array(self.data)) * 1e2))))
                 axs[1].plot(np.asnumpy(bt2 / np.array(self.parameters['per'])), np.asnumpy(br2), 'bs', alpha=1, zorder=2)
             except AttributeError:
