@@ -494,10 +494,18 @@ class lc_fitter(object):
             axs[0].set_ylim([1 - 1.25 * self.parameters['rprs'] ** 2, 1 + 0.5 * self.parameters['rprs'] ** 2])
         else:
             if phase:
-                axs[0].errorbar(self.phase, self.detrended, yerr=np.std(self.residuals) / np.median(self.data),
+                try:
+                    axs[0].errorbar(self.phase, self.detrended, yerr=np.asnumpy(np.std(np.array(self.residuals)) / np.median(np.array(self.data))),
+                                ls='none', marker='.', color='black', zorder=1, alpha=0.2)
+                except AttributeError:
+                    axs[0].errorbar(self.phase, self.detrended, yerr=np.std(self.residuals) / np.median(self.data),
                                 ls='none', marker='.', color='black', zorder=1, alpha=0.2)
             else:
-                axs[0].errorbar(self.time, self.detrended, yerr=np.std(self.residuals) / np.median(self.data),
+                try:
+                    axs[0].errorbar(self.time, self.detrended, yerr=np.std(self.residuals) / np.median(self.data),
+                                ls='none', marker='.', color='black', zorder=1, alpha=0.2)
+                except AttributeError:
+                    axs[0].errorbar(self.time, self.detrended, yerr=np.asnumpy(np.std(np.array(self.residuals)) / np.median(np.array(self.data))),
                                 ls='none', marker='.', color='black', zorder=1, alpha=0.2)
 
         if phase:
