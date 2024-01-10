@@ -284,7 +284,7 @@ class rv_fitter(lc_fitter):
                 detrend = self.data[i]['vel'] - model
                 try:
                     model = np.asnumpy(np.array(model) + np.mean(np.array(detrend)))
-                    chi2 = np.asnumpy(chi2 + np.mean(((np.array(self.data[i]['vel'])-np.array(model))/(np.array(self.data[i]['velerr'])))**2)/nobs)
+                    chi2 += np.mean(((np.array(self.data[i]['vel'])-np.array(model))/(np.array(self.data[i]['velerr'])))**2)/nobs
                 except AttributeError:
                     model += np.mean(detrend)
                     chi2 += np.mean(((self.data[i]['vel']-model)/(self.data[i]['velerr']))**2)/nobs
