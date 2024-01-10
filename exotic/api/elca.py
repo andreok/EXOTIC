@@ -832,7 +832,7 @@ class glc_fitter(lc_fitter):
                 # compute model
                 model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
                 try:
-                    model = np.asnumpy(np.array(model) * np.exp(np.array(self.lc_data[i]['priors']['a2'])*p.array(self.lc_data[i]['airmass'])))
+                    model = np.asnumpy(np.array(model) * np.exp(np.array(self.lc_data[i]['priors']['a2'])*np.array(self.lc_data[i]['airmass'])))
                 except AttributeError:
                     model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
                 detrend = self.lc_data[i]['flux']/model
