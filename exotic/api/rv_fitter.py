@@ -113,7 +113,6 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 
     return [x, y, z]
 
-@jit(nopython=True)
 def rv_model(time, params, dt=0.0001):
     """
     Compute the radial velocity model for a planet orbiting a star
