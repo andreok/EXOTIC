@@ -68,8 +68,7 @@ Msun = const.M_sun.to(u.kg).value
 Rsun = const.R_sun.to(u.m).value
 Grav = const.G.to(u.m**3/u.kg/u.day**2).value
 
-@jit(nopython=True)
-def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1, W=0):
+def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1, W=0): # this function runs completely using cupy arrays
     # see original @ https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
     periastron = periastron * np.pi / 180.0
@@ -77,9 +76,14 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     W = W * np.pi / 180.0
 
     if eccentricity == 0 and ww == 0:
-        vv = 2 * np.pi * (time_array - mid_time) / period
-        bb = sma_over_rs * np.cos(vv)
-        return [mu*bb * np.sin(inclination), mu*sma_over_rs * np.sin(vv), - bb * mu*np.cos(inclination)]
+        try:
+            vv = 2 * np.pi * (np.array(time_array) - mid_time) / period
+            bb = sma_over_rs * np.cos(vv)
+            return [np.asnumpy(mu*bb * np.sin(inclination)), np.asnumpy(mu*sma_over_rs * np.sin(vv)), np.asnumpy(- bb * mu*np.cos(inclination))]
+        except AttributeError:
+            vv = 2 * np.pi * (time_array - mid_time) / period
+            bb = sma_over_rs * np.cos(vv)
+            return [mu*bb * np.sin(inclination), mu*sma_over_rs * np.sin(vv), - bb * mu*np.cos(inclination)]
 
     if periastron < np.pi / 2:
         aa = 1.0 * np.pi / 2 - periastron
@@ -113,7 +117,10 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     y = rr * (-aa * np.cos(ww) + bb * np.sin(ww) * np.cos(inclination))
     z = rr * (-aa * np.sin(ww) - bb * np.cos(ww) * np.cos(inclination))
 
-    return [x, y, z]
+    try:
+        return [np.asnumpy(x), np.asnumpy(y), np.asnumpy(z)]
+    except AttributeError:
+        return [x, y, z]
 
 def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
             mid_time, time_array, method='claret', precision=3):
@@ -169,11 +176,14 @@ def phasecurve(times, values):
                     values['ecc'], values['inc'], values['omega'],
                     values['tmid'], times, method='quad', precision=3)
     c0 = edepth - values['c1'] - values['c3']
-    brightness = 1 + c0 + values['c1']*np.cos(2*np.pi*(times-tme)/values['per']) + values['c2']*np.sin(2*np.pi*(times-tme)/values['per']) + values['c3']*np.cos(4*np.pi*(times-tme)/values['per']) + values['c4']*np.sin(4*np.pi*(times-tme)/values['per'])
-    emask = np.floor(emodel)
+    try:
+        brightness = np.asnumpy(1 + c0 + values['c1']*np.cos(2*np.pi*(np.array(times)-tme)/values['per']) + values['c2']*np.sin(2*np.pi*(np.array(times)-tme)/values['per']) + values['c3']*np.cos(4*np.pi*(np.array(times)-tme)/values['per']) + values['c4']*np.sin(4*np.pi*(np.array(times)-tme)/values['per']))
+        emask = np.asnumpy(np.floor(np.array(emodel)))
+    except AttributeError:
+        brightness = 1 + c0 + values['c1']*np.cos(2*np.pi*(times-tme)/values['per']) + values['c2']*np.sin(2*np.pi*(times-tme)/values['per']) + values['c3']*np.cos(4*np.pi*(times-tme)/values['per']) + values['c4']*np.sin(4*np.pi*(times-tme)/values['per'])
+        emask = np.floor(emodel)
     return (brightness*(emask) + (edepth+emodel)*(1-emask))*tmodel
 
-@jit(nopython=True)
 def rv_model(time, params, dt=0.0001):
     xp,yp,zp = planet_orbit(params['per'], params['ars'], params['ecc'], 
                             params['inc'], params['omega'], params['tmid'], 
