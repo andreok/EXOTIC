@@ -275,7 +275,10 @@ class rv_fitter(lc_fitter):
                     self.data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
                 # extract relevant part of the rv model
-                model = orbit[self.data[i]['time_mask']]
+                try:
+                    model = orbit[self.data[i]['time_mask'].get()]
+                except AttributeError:
+                    model = orbit[self.data[i]['time_mask']]
 
                 # handle offset
                 detrend = self.data[i]['vel'] - model
