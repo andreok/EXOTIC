@@ -479,7 +479,15 @@ class joint_fitter(glc_fitter):
                 freekeys.append(f"local_{n}_{k}")
 
         if self.verbose:
-            self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=2e5)
+            #self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=2e5)
+            #print(type(freekeys))
+            #print(type(loglike))
+            #print(type(prior_transform))
+            sampler = ReactiveNestedSampler(freekeys, loglike, prior_transform)
+            nsteps = 2 * len(freekeys)
+            #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
+            sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
+            self.results = sampler.run(max_ncalls=2e6) # pached
         else:
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=2e5, show_status=self.verbose, viz_callback=self.verbose)
 
