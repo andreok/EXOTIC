@@ -67,18 +67,19 @@ Msun = const.M_sun.to(u.kg).value
 Rsun = const.R_sun.to(u.m).value
 Grav = const.G.to(u.m**3/u.kg/u.day**2).value
 
-def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1):
+def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0, mu=1): # this function runs completely using cupy arrays
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
     periastron = periastron * np.pi / 180.0
     ww = ww * np.pi / 180.0
 
     if eccentricity == 0 and ww == 0:
-        vv = 2 * np.pi * (time_array - mid_time) / period
         try:
-            bb = np.asnumpy(sma_over_rs * np.cos(np.array(vv)))
-            return [np.asnumpy(mu*np.array(bb) * np.sin(inclination)), np.asnumpy(mu*sma_over_rs * np.sin(np.array(vv))), np.asnumpy(- np.array(bb) * mu*np.cos(inclination))]
+            vv = 2 * np.pi * (np.array(time_array) - mid_time) / period
+            bb = sma_over_rs * np.cos(vv)
+            return [np.asnumpy(mu*bb * np.sin(inclination)), np.asnumpy(mu*sma_over_rs * np.sin(vv)), np.asnumpy(- bb * mu*np.cos(inclination))]
         except AttributeError:
+            vv = 2 * np.pi * (time_array - mid_time) / period
             bb = sma_over_rs * np.cos(vv)
             return [mu*bb * np.sin(inclination), mu*sma_over_rs * np.sin(vv), - bb * mu*np.cos(inclination)]
 
@@ -117,7 +118,10 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     y = rr * (-aa * np.cos(ww) + bb * np.sin(ww) * np.cos(inclination))
     z = rr * (-aa * np.sin(ww) - bb * np.cos(ww) * np.cos(inclination))
 
-    return [x, y, z]
+    try:
+        return [np.asnumpy(x), np.asnumpy(y), np.asnumpy(z)]
+    except AttributeError:
+        return [x, y, z]
 
 def rv_model(time, params, dt=0.0001):
     """
