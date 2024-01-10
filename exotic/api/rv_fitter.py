@@ -75,8 +75,12 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 
     if eccentricity == 0 and ww == 0:
         vv = 2 * np.pi * (time_array - mid_time) / period
-        bb = sma_over_rs * np.cos(vv)
-        return [mu*bb * np.sin(inclination), mu*sma_over_rs * np.sin(vv), - bb * mu*np.cos(inclination)]
+        try:
+            bb = np.asnumpy(sma_over_rs * np.cos(np.array(vv)))
+            return [np.asnumpy(mu*np.array(bb) * np.sin(inclination)), np.asnumpy(mu*sma_over_rs * np.sin(np.array(vv))), np.asnumpy(- np.array(bb) * mu*np.cos(inclination))]
+        except AttributeError:
+            bb = sma_over_rs * np.cos(vv)
+            return [mu*bb * np.sin(inclination), mu*sma_over_rs * np.sin(vv), - bb * mu*np.cos(inclination)]
 
     if periastron < np.pi / 2:
         aa = 1.0 * np.pi / 2 - periastron
@@ -86,7 +90,10 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     if bb < 0:
         bb += 2 * np.pi
     mid_time = float(mid_time) - (period / 2.0 / np.pi) * (bb - eccentricity * np.sin(bb))
-    m = (time_array - mid_time - np.int_((time_array - mid_time) / period) * period) * 2.0 * np.pi / period
+    try:
+        m = np.asnumpy((np.array(time_array) - mid_time - np.int_((np.array(time_array) - mid_time) / period) * period) * 2.0 * np.pi / period)
+    except AttributeError:
+        m = (time_array - mid_time - np.int_((time_array - mid_time) / period) * period) * 2.0 * np.pi / period
     u0 = m
     stop = False
     u1 = 0
