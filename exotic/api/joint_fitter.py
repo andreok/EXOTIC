@@ -406,7 +406,7 @@ class joint_fitter(glc_fitter):
 
                 # TODO add error scaling to chi2
                 try:
-                    rv_chi2 += (np.sum(((np.array(self.rv_data[i]['vel'])-np.array(model))/(np.array(self.rv_data[i]['velerr'])))**2)#/nobs_rv).item()
+                    rv_chi2 += np.sum(((np.array(self.rv_data[i]['vel'])-np.array(model))/(np.array(self.rv_data[i]['velerr'])))**2).item() #/nobs_rv)
                 except AttributeError:
                     rv_chi2 += np.sum(((self.rv_data[i]['vel']-model)/(self.rv_data[i]['velerr']))**2)#/nobs_rv
 
