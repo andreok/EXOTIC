@@ -144,7 +144,6 @@ def rv_model(time, params, dt=0.0001):
                             time+dt, mu=1-params['mu'], ww=0)
     return (xp2-xp)*params['mu']*params['rstar']*80520833.33333333 # Rstar/day -> m/s
 
-@jit(nopython=True)
 def acceleration_model(time, params, dt=0.0001):
     # estimate radial acceleration from velocity
     v1 = rv_model(time, params, dt=dt)
