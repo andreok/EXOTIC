@@ -390,13 +390,13 @@ class joint_fitter(glc_fitter):
                 # handle offset
                 detrend = self.rv_data[i]['vel'] - model
                 try:
-                    model = as.numpy(np.array(model) + np.mean(np.array(detrend)))
+                    model = np.asnumpy(np.array(model) + np.mean(np.array(detrend)))
                 except AttributeError:
                     model += np.mean(detrend)
 
                 # TODO add error scaling to chi2
                 try:
-                    rv_chi2 += np.sum(((np.array(self.rv_data[i]['vel'])-np.array(model))/(np.array(self.rv_data[i]['velerr'])))**2)#/nobs_rv
+                    rv_chi2 += (np.sum(((np.array(self.rv_data[i]['vel'])-np.array(model))/(np.array(self.rv_data[i]['velerr'])))**2)#/nobs_rv).item()
                 except AttributeError:
                     rv_chi2 += np.sum(((self.rv_data[i]['vel']-model)/(self.rv_data[i]['velerr']))**2)#/nobs_rv
 
@@ -422,7 +422,7 @@ class joint_fitter(glc_fitter):
                 detrend = self.lc_data[i]['flux']/model
                 try:
                     model = np.asnumpy(np.array(model) * np.mean(np.array(detrend)))
-                    lc_chi2 += 2*np.sum(((np.array(self.lc_data[i]['flux'])-np.array(model))/(np.array(self.lc_data[i]['ferr'])))**2)
+                    lc_chi2 += 2*np.sum(((np.array(self.lc_data[i]['flux'])-np.array(model))/(np.array(self.lc_data[i]['ferr'])))**2).item()
                 except AttributeError:
                     model *= np.mean(detrend)
                     lc_chi2 += 2*np.sum(((self.lc_data[i]['flux']-model)/(self.lc_data[i]['ferr']))**2)
@@ -433,7 +433,7 @@ class joint_fitter(glc_fitter):
             # predict mid-transit time
             tmid_pred = self.ephemeris['tmid_orbit']*self.rv_data[0]['priors']['per'] + self.lc_data[0]['priors']['tmid']
             try:
-                eph_chi2 += np.sum(((np.array(tmid_pred-self.ephemeris['tmid'][:,0]))/(np.array(self.ephemeris['tmid'][:,1])+self.ephemeris['noise']))**2)
+                eph_chi2 += np.sum(((np.array(tmid_pred-self.ephemeris['tmid'][:,0]))/(np.array(self.ephemeris['tmid'][:,1])+self.ephemeris['noise']))**2).item()
             except AttributeError:
                 eph_chi2 += np.sum(((tmid_pred-self.ephemeris['tmid'][:,0])/(self.ephemeris['tmid'][:,1]+self.ephemeris['noise']))**2)
 
@@ -455,7 +455,7 @@ class joint_fitter(glc_fitter):
 
             #eph_chi2 += np.sum(((emid_pred-self.ephemeris['emid'][:,0])/(self.ephemeris['emid'][:,1]+self.ephemeris['noise']))**2)
             try:
-                eph_chi2 += np.sum(((np.array(emid_pred-self.ephemeris['emid'][:,0]))/(np.array(self.ephemeris['emid'][:,1])))**2)
+                eph_chi2 += np.sum(((np.array(emid_pred-self.ephemeris['emid'][:,0]))/(np.array(self.ephemeris['emid'][:,1])))**2).item()
             except AttributeError:
                 eph_chi2 += np.sum(((emid_pred-self.ephemeris['emid'][:,0])/(self.ephemeris['emid'][:,1]))**2)
 
