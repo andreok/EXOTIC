@@ -283,8 +283,8 @@ class rv_fitter(lc_fitter):
                 # handle offset
                 detrend = self.data[i]['vel'] - model
                 try:
-                    model = pp.asnumpy(np.array(model) + np.mean(np.array(detrend)))
-                    chi2 += np.mean(((np.array(self.data[i]['vel'])-np.array(model))/(np.array(self.data[i]['velerr'])))**2)/nobs
+                    model = np.asnumpy(np.array(model) + np.mean(np.array(detrend)))
+                    chi2 = np.asnumpy(chi + np.mean(((np.array(self.data[i]['vel'])-np.array(model))/(np.array(self.data[i]['velerr'])))**2)/nobs)
                 except AttributeError:
                     model += np.mean(detrend)
                     chi2 += np.mean(((self.data[i]['vel']-model)/(self.data[i]['velerr']))**2)/nobs
