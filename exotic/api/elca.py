@@ -811,7 +811,7 @@ class glc_fitter(lc_fitter):
         try:
             bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
         except AttributeError:
-            bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
+            bounddiff = np.diff(boundarray,1).reshape(-1)
         def prior_transform(upars):
             return (boundarray[:,0] + bounddiff*upars)
 
