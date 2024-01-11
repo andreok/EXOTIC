@@ -56,6 +56,7 @@ from scipy.optimize import least_squares
 from scipy.signal import savgol_filter
 try:
     from ultranest import ReactiveNestedSampler
+    import ultranest.stepsampler
 except ImportError:
     import dynesty
     import dynesty.plotting
