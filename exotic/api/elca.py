@@ -92,7 +92,6 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 
 def transit(times, values):
-    #print('starting transit()')
     model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
@@ -179,7 +178,6 @@ class lc_fitter(object):
             self.fit_nested()
 
     def fit_LM(self):
-        print('starting fit_LM()')
         freekeys = list(self.bounds.keys())
         boundarray = np.array([self.bounds[k] for k in freekeys])
 
@@ -859,11 +857,6 @@ class glc_fitter(lc_fitter):
 
         noop = lambda *args, **kwargs: None
         if self.verbose:
-            #self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=True)
-            #self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=2e6, show_status=True) # patched
-            #print(type(freekeys))
-            #print(type(loglike))
-            #print(type(prior_transform))
             sampler = ReactiveNestedSampler(freekeys, loglike, prior_transform)
             nsteps = 2 * len(freekeys)
             #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
@@ -1074,7 +1067,6 @@ class glc_fitter(lc_fitter):
             'residuals': [],
         }
 
-        print('starting loop')
         for n in range(len(self.lc_data)):
             ncolor = next(colors)
             nmarker = next(markers)
@@ -1092,7 +1084,6 @@ class glc_fitter(lc_fitter):
             #bt2, br2, _ = time_bin(phase[si]*self.parameters['per'], self.lc_data[n]['residuals'][si]/np.median(self.lc_data[n]['flux'])*1e2, bin_dt)
 
             # plot data
-            print('plotting data')
             try:
                 axs[0].errorbar(phase, self.lc_data[n]['detrend'], yerr=np.asnumpy(np.std(np.array(self.lc_data[n]['residuals']))/np.median(np.array(self.lc_data[n]['flux']))), 
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
@@ -1101,7 +1092,6 @@ class glc_fitter(lc_fitter):
                             ls='none', marker=nmarker, color=ncolor, zorder=1, alpha=alpha)
 
             # plot residuals
-            print('plotting residuals')
             try:
                 axs[1].plot(phase, self.lc_data[n]['residuals']/np.asnumpy(np.median(np.array(self.lc_data[n]['flux']))*1e2), color=ncolor, marker=nmarker, ls='none',
                          alpha=0.2)
@@ -1110,7 +1100,6 @@ class glc_fitter(lc_fitter):
                          alpha=0.2)
 
             # plot binned data
-            print('plotting binned data')
             try:
                 bt2, bf2, bs = time_bin(np.array(phase[si])*np.array(self.lc_data[n]['priors']['per']), np.array(self.lc_data[n]['detrend'][si]), bin_dt)
             except AttributeError:
@@ -1130,7 +1119,6 @@ class glc_fitter(lc_fitter):
                                 label=r'{}: {:.2f} %'.format(self.lc_data[n].get('name',''),np.std(self.lc_data[n]['residuals']/np.median(self.lc_data[n]['flux'])*1e2)))
 
             # replace min and max for upsampled lc model
-            print('replacing min and max for upsample')
             minp = min(minp, min(phase))
             maxp = max(maxp, max(phase))
             try:
@@ -1140,11 +1128,9 @@ class glc_fitter(lc_fitter):
 
             # plot individual best fit models
             if show_individual_fits:
-                print('plotting individual best fit models')
                 axs[0].plot(self.lc_data[n]['phase_upsample'], self.lc_data[n]['transit_upsample'], color=ncolor, zorder=3, alpha=0.5)
 
         # create binned plot for all the data
-        print('creating binned plot for all the data')
         for k in alldata.keys():
             try:
                 alldata[k] = np.asnumpy(np.array(alldata[k]))
@@ -1175,7 +1161,6 @@ class glc_fitter(lc_fitter):
         axs[1].plot(bt/self.parameters['per'],br*1e2,color='white',ls='none',marker='o',ms=11,markeredgecolor='black')
         
         # best fit model
-        print('plotting best fit model')
         try:
             self.time_upsample = np.asnumpy(np.linspace(minp*np.array(self.parameters['per'])+np.array(self.parameters['tmid']), 
                                          maxp*np.array(self.parameters['per'])+np.array(self.parameters['tmid']), 10000))
@@ -1192,7 +1177,6 @@ class glc_fitter(lc_fitter):
         axs[0].plot(self.phase_upsample[sii], self.transit_upsample[sii], 'r-', zorder=3, label=lclabel, lw=3)
 
         # set up axes limits
-        print('setting up axes limits')
         axs[0].set_xlim([min(self.phase_upsample), max(self.phase_upsample)])
         axs[0].set_xlabel("Phase ", fontsize=14)
         axs[0].set_ylim([1-self.parameters['rprs']**2-ylim_sigma*min_std, 1+ylim_sigma*min_std])
@@ -1207,7 +1191,6 @@ class glc_fitter(lc_fitter):
             maxs.append(max(self.lc_data[n]['phase']))
 
         # set up phase limits
-        print('setting up phase limits')
         if isinstance(phase_limits, str):
             if phase_limits == "minmax":
                 axs[0].set_xlim([min(self.phase_upsample), max(self.phase_upsample)])
