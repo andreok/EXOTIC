@@ -51,6 +51,7 @@ from pylightcurve.models.exoplanet_lc import eclipse_mid_time, transit_flux_drop
 from scipy import stats
 try:
     from ultranest import ReactiveNestedSampler
+    import ultranest.stepsampler
 except ImportError:
     import dynesty
     import dynesty.plotting
