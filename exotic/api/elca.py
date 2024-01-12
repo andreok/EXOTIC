@@ -98,8 +98,10 @@ def transit(times, values):
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, method='claret', precision=3)
-    return model.cpu().numpy()
-    #return model
+    try:
+        return model.cpu().numpy()
+    except AttributeError:
+        return model
 
 @jit(nopython=True)
 def get_phase(times, per, tmid):
