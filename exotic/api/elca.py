@@ -50,6 +50,8 @@ try:
     import cupy as np
     import torch
     from pylightcurve_torch import TransitModule as pytransit
+    import jax
+    import jax.numpy as jnp
 except ImportError:
     import numpy as np
     from pylightcurve.models.exoplanet_lc import transit as pytransit
@@ -58,7 +60,10 @@ from scipy.optimize import least_squares
 from scipy.signal import savgol_filter
 try:
     from ultranest import ReactiveNestedSampler
-    import ultranest.stepsampler
+    if 'jax' in globals():
+        import ultranest.popstepsampler
+    else:
+        import ultranest.stepsampler
 except ImportError:
     import dynesty
     import dynesty.plotting
@@ -99,7 +104,7 @@ def transit(times, values):
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, method='claret', precision=3)
     try:
-        return model.cpu().numpy()
+        return model.cpu().numpy() # must convert from PyTorch GPU arrays to Numpy arrays for CPU
     except AttributeError:
         return model
 
@@ -864,8 +869,12 @@ class glc_fitter(lc_fitter):
         if self.verbose:
             sampler = ReactiveNestedSampler(freekeys, loglike, prior_transform)
             nsteps = 2 * len(freekeys)
-            #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
-            sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
+            try:
+                #sampler.stepsampler = ultranest.popstepsampler.PopulationRandomWalkSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_region_random_direction)
+                sampler.stepsampler = ultranest.popstepsampler.PopulationSliceSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_cube_oriented_direction)
+            except NameError:
+                #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
+                sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
             self.results = sampler.run(max_ncalls=2e6, show_status=True) # pached
         else:
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=False, viz_callback=noop)
