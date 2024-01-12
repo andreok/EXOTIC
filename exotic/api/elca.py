@@ -48,11 +48,11 @@ try:
     if 'np' in globals():
         del globals()['np']
     import cupy as np
-    import torch
-    from pylightcurve_torch import TransitModule as pytransit
 except ImportError:
     import numpy as np
-    from pylightcurve.models.exoplanet_lc import transit as pytransit
+#from pylightcurve.models.exoplanet_lc import transit as pytransit
+import torch
+from pylightcurve_torch import TransitModule as pytransit
 from scipy import spatial
 from scipy.optimize import least_squares
 from scipy.signal import savgol_filter
@@ -98,10 +98,7 @@ def transit(times, values):
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, method='claret', precision=3)
-    try:
-        return model.cpu().numpy()
-    except AttributeError:
-        return model
+    return model.cpu().numpy()
 
 @jit(nopython=True)
 def get_phase(times, per, tmid):
