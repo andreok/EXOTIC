@@ -49,7 +49,8 @@ try:
         del globals()['np']
     import cupy as np
     import torch
-    from pylightcurve_torch import TransitModule as pytransit
+    #from pylightcurve_torch import TransitModule as pytransit
+    from pylightcurve_torch.functional import transit as pytransit
     #import jax
     #import jax.numpy as jnp
 except ImportError:
@@ -101,10 +102,14 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 def transit(times, values):
     try:
-        model = pytransit(times, {'method':'claret', 'ldc':[values['u0'], values['u1'], values['u2'], values['u3']], 
-                      'rp':values['rprs'], 'P':values['per'], 'a':values['ars'],
-                      'e':values['ecc'], 'i':values['inc'], 'w':values['omega'],
-                      't0':values['tmid']}) #pylightcurve-torch has a different syntax 
+        #model = pytransit(times, {'method':'claret', 'ldc':[values['u0'], values['u1'], values['u2'], values['u3']], 
+        #              'rp':values['rprs'], 'P':values['per'], 'a':values['ars'],
+        #              'e':values['ecc'], 'i':values['inc'], 'w':values['omega'],
+        #              't0':values['tmid']}) #pylightcurve-torch has a different syntax 
+        model = pytransit('claret', [values['u0'], values['u1'], values['u2'], values['u3']], 
+                      values['rprs'], values['per'], values['ars'],
+                      values['ecc'], values['inc'], values['omega'],
+                      values['tmid'], times, precision=3) #pylightcurve-torch has a different syntax 
         return model.cpu().numpy() # must convert from PyTorch GPU arrays to Numpy arrays for CPU
     except AttributeError:
     #except TypeError:
