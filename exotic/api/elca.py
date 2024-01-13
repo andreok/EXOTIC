@@ -101,10 +101,10 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 def transit(times, values):
     try:
-        model = pytransit('claret', [values['u0'], values['u1'], values['u2'], values['u3']], 
-                      values['rprs'], values['per'], values['ars'],
-                      values['ecc'], values['inc'], values['omega'],
-                      values['tmid'], times)
+        model = pytransit({'method':'claret', 'ldc':[values['u0'], values['u1'], values['u2'], values['u3']], 
+                      'rp':values['rprs'], 'P':values['per'], 'a':values['ars'],
+                      'e':values['ecc'], 'i':values['inc'], 'w':values['omega'],
+                      't0':values['tmid']}, times) #pylightcurve-torch has a different syntax 
         return model.cpu().numpy() # must convert from PyTorch GPU arrays to Numpy arrays for CPU
     except AttributeError:
     #except TypeError:
