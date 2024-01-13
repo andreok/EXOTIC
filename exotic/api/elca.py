@@ -104,7 +104,7 @@ def transit(times, values):
         model = pytransit('claret', [values['u0'], values['u1'], values['u2'], values['u3']], 
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
-                      values['tmid'], times, precision=3)
+                      values['tmid'], times)
         return model.cpu().numpy() # must convert from PyTorch GPU arrays to Numpy arrays for CPU
     except AttributeError:
     #except TypeError:
