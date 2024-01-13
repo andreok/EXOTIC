@@ -106,7 +106,8 @@ def transit(times, values):
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, precision=3)
         return model.cpu().numpy() # must convert from PyTorch GPU arrays to Numpy arrays for CPU
-    except TypeError:
+    except AttributeError:
+    #except TypeError:
         model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
