@@ -106,7 +106,7 @@ def transit(times, values):
                       torch.tensor([[values['rprs']]], device=cuda), torch.tensor([[values['per']]], device=cuda), 
                       torch.tensor([[values['ars']]], device=cuda), torch.tensor([[values['ecc']]], device=cuda), 
                       torch.tensor([[values['inc']]], device=cuda), torch.tensor([[values['omega']]], device=cuda),
-                      torch.tensor([[values['tmid']]], device=cuda), torch.tensor(times, device=cuda), precision=3, n_pars=1) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
+                      torch.tensor([[values['tmid']]], device=cuda), torch.from_numpy(times).float().cuda(device=cuda), precision=3, n_pars=1) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
         return model.cpu().numpy() # must convert from PyTorch GPU Tensors to Numpy arrays for CPU
     #except AttributeError:
     #except TypeError:
