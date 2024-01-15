@@ -101,10 +101,12 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 def transit(times, values):
     try:
-        model = pytransit('claret', torch.tensor([[values['u0'], values['u1'], values['u2'], values['u3']]]), 
-                      torch.tensor([[values['rprs']]]), torch.tensor([[values['per']]]), torch.tensor([[values['ars']]]),
-                      torch.tensor([[values['ecc']]]), torch.tensor([[values['inc']]]), torch.tensor([[values['omega']]]),
-                      torch.tensor([[values['tmid']]]), torch.from_numpy(times), precision=3, n_pars=1) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
+        cuda = torch.device('cuda')
+        model = pytransit('claret', torch.tensor([[values['u0'], values['u1'], values['u2'], values['u3']]], device=cuda), 
+                      torch.tensor([[values['rprs']]], device=cuda), torch.tensor([[values['per']]], device=cuda), 
+                      torch.tensor([[values['ars']]], device=cuda), torch.tensor([[values['ecc']]], device=cuda), 
+                      torch.tensor([[values['inc']]], device=cuda), torch.tensor([[values['omega']]], device=cuda),
+                      torch.tensor([[values['tmid']]], device=cuda), torch.tensor(times, device=cuda), precision=3, n_pars=1) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
         return model.cpu().numpy() # must convert from PyTorch GPU Tensors to Numpy arrays for CPU
     #except AttributeError:
     #except TypeError:
