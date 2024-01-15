@@ -107,7 +107,8 @@ def transit(times, values):
                       torch.tensor([[values['tmid']]]), torch.from_numpy(times), precision=3) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
         return model.cpu().numpy() # must convert from PyTorch GPU Tensors to Numpy arrays for CPU
     #except AttributeError:
-    except TypeError:
+    #except TypeError:
+    except NameError:
         model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
