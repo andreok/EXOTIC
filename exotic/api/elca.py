@@ -115,7 +115,7 @@ def transit(times, values):
                       torch.from_dlpack(np.array(values['rprs'])), torch.from_dlpack(np.array(values['per'])), 
                       torch.from_dlpack(np.array(values['ars'])), torch.from_dlpack(np.array(values['ecc'])), 
                       torch.from_dlpack(np.array(values['inc'])), torch.from_dlpack(np.array(values['omega'])),
-                      torch.from_dlpack(np.array(values['tmid'])), torch.from_dlpack(np.array(times)), precision=3, n_pars=values['tmid'].size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
+                      torch.from_dlpack(np.array(values['tmid'])), torch.from_dlpack(np.array(times)), precision=3, n_pars=np.array(values['rprs']).size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
         return np.asnumpy(np.from_dlpack(model)) # must convert from PyTorch GPU Tensors to cupy arrays for CPU
     #except AttributeError:
     #except TypeError:
