@@ -390,7 +390,7 @@ class rv_fitter(lc_fitter):
                         marker=nmarker, color=ncolor, ls='')
             #ax[1].errorbar(phase, self.data[n]['detrend'] - \
             #            (self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
-            #            self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2), 
+            #            self.parameters.get('rv_quad', self.data[n]['priors']['rv_quad'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2), 
             #            yerr=self.data[n]['velerr'], 
             #            marker=nmarker, color=ncolor, ls='')
             try:
@@ -401,8 +401,8 @@ class rv_fitter(lc_fitter):
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
                 #ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'] + \
-                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
-                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2,
+                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min())) + \
+                #        self.parameters.get('rv_quad', self.data[n]['priors']['rv_quad'])*(self.data[n]['time']-int(self.alltime.min()))**2,
                 #        yerr=self.data[n]['velerr'], 
                 #        marker=nmarker, color=ncolor, ls='', 
                 #        label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
@@ -414,8 +414,8 @@ class rv_fitter(lc_fitter):
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
                 #ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'] + \
-                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
-                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2, 
+                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min())) + \
+                #        self.parameters.get('rv_quad', self.data[n]['priors']['rv_lquad'])*(self.data[n]['time']-int(self.alltime.min()))**2, 
                 #        yerr=self.data[n]['velerr'], 
                 #        marker=nmarker, color=ncolor, ls='', 
                 #        label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
