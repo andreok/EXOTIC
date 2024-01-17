@@ -386,13 +386,13 @@ class rv_fitter(lc_fitter):
             ncolor = next(colors)
             nmarker = next(markers)
 
-            #ax[1].errorbar(phase, self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
-            #            marker=nmarker, color=ncolor, ls='')
-            ax[1].errorbar(phase, self.data[n]['detrend'] - \
-                        (self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
-                        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2), 
-                        yerr=self.data[n]['velerr'], 
+            ax[1].errorbar(phase, self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='')
+            #ax[1].errorbar(phase, self.data[n]['detrend'] - \
+            #            (self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
+            #            self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2), 
+            #            yerr=self.data[n]['velerr'], 
+            #            marker=nmarker, color=ncolor, ls='')
             try:
                 ax[2].errorbar(phase, self.data[n]['residuals'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
@@ -440,11 +440,11 @@ class rv_fitter(lc_fitter):
                 rf"$\omega$ = {self.data[0]['priors']['omega']:.2f} $\pm$ {0.00:.2f}" + "\n" \
                 rf"$M_p$ = {self.parameters['mplanet']:.4f} $\pm$ {self.errors['mplanet']:.4f}"+r"$M_{Jup}$"
 
-        #ax[1].plot(nphase[si], self.allmodel[si], 'k-', label=label)
-        ax[1].plot(nphase[si], self.allmodel[si] - \
-                (self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.alltime - int(self.alltime.min())) + \
-                self.parameters.get('rv_quad', self.data[n]['priors']['rv_quad'])*(self.alltime - int(self.alltime.min()))**2), 
-                'k-', label=label)
+        ax[1].plot(nphase[si], self.allmodel[si], 'k-', label=label)
+        #ax[1].plot(nphase[si], self.allmodel[si] - \
+        #        (self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.alltime - int(self.alltime.min())) + \
+        #        self.parameters.get('rv_quad', self.data[n]['priors']['rv_quad'])*(self.alltime - int(self.alltime.min()))**2), 
+        #        'k-', label=label)
         ax[0].plot(self.alltime-int(self.alltime.min()), self.allmodel, 'k-', label='', alpha=0.75)
         #ax[0].plot(self.alltime-int(self.alltime.min()), self.allmodel + \
         #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.alltime - int(self.alltime.min())) + \
