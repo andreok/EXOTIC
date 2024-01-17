@@ -440,12 +440,16 @@ class rv_fitter(lc_fitter):
                 rf"$\omega$ = {self.data[0]['priors']['omega']:.2f} $\pm$ {0.00:.2f}" + "\n" \
                 rf"$M_p$ = {self.parameters['mplanet']:.4f} $\pm$ {self.errors['mplanet']:.4f}"+r"$M_{Jup}$"
 
-        ax[1].plot(nphase[si], self.allmodel[si], 'k-', label=label)
-        #ax[0].plot(self.alltime-int(self.alltime.min()), self.allmodel, 'k-', label='', alpha=0.75)
-        ax[0].plot(self.alltime-int(self.alltime.min()), self.allmodel + \
-                self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.alltime - int(self.alltime.min())) + \
-                self.parameters.get('rv_quad', self.data[n]['priors']['rv_quad'])*(self.alltime - int(self.alltime.min()))**2, 
-                'k-', label='', alpha=0.75)
+        #ax[1].plot(nphase[si], self.allmodel[si], 'k-', label=label)
+        ax[1].plot(nphase[si], self.allmodel[si] - \
+                (self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.alltime - int(self.alltime.min())) + \
+                self.parameters.get('rv_quad', self.data[n]['priors']['rv_quad'])*(self.alltime - int(self.alltime.min()))**2), 
+                'k-', label=label)
+        ax[0].plot(self.alltime-int(self.alltime.min()), self.allmodel, 'k-', label='', alpha=0.75)
+        #ax[0].plot(self.alltime-int(self.alltime.min()), self.allmodel + \
+        #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.alltime - int(self.alltime.min())) + \
+        #        self.parameters.get('rv_quad', self.data[n]['priors']['rv_quad'])*(self.alltime - int(self.alltime.min()))**2, 
+        #        'k-', label='', alpha=0.75)
         ax[0].set_xlabel(f'BJD-{int(self.alltime.min())}')
         ax[1].set_ylabel("RV (m/s)")
         ax[0].set_ylabel("RV (m/s)")
