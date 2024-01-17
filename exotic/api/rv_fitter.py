@@ -386,7 +386,7 @@ class rv_fitter(lc_fitter):
             ncolor = next(colors)
             nmarker = next(markers)
 
-            ax[1].errorbar(phase, self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
+            ax[1].errorbar(phase, self.data[n]['priors']['offset'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='')
             try:
                 ax[2].errorbar(phase, self.data[n]['residuals'], yerr=self.data[n]['velerr'], 
