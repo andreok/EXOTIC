@@ -386,34 +386,39 @@ class rv_fitter(lc_fitter):
             ncolor = next(colors)
             nmarker = next(markers)
 
-            ax[1].errorbar(phase, self.data[n]['priors']['offset'], yerr=self.data[n]['velerr'], 
+            #ax[1].errorbar(phase, self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
+            #            marker=nmarker, color=ncolor, ls='')
+            ax[1].errorbar(phase, self.data[n]['detrend'] - \
+                        (self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
+                        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2), 
+                        yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='')
             try:
                 ax[2].errorbar(phase, self.data[n]['residuals'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
-                #ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
-                #        marker=nmarker, color=ncolor, ls='', 
-                #        label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
-                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'] + \
-                        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
-                        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2,
-                        yerr=self.data[n]['velerr'], 
+                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
+                #ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'] + \
+                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
+                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2,
+                #        yerr=self.data[n]['velerr'], 
+                #        marker=nmarker, color=ncolor, ls='', 
+                #        label=rf"{self.data[n]['name']} $\sigma$ = {np.asnumpy(np.std(np.array(self.data[n]['residuals']))):.2f} m/s")
             except AttributeError:
                 ax[2].errorbar(phase, self.data[n]['residuals'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
-                #ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
-                #        marker=nmarker, color=ncolor, ls='', 
-                #        label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
-                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'] + \
-                        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
-                        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2, 
-                        yerr=self.data[n]['velerr'], 
+                ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'], yerr=self.data[n]['velerr'], 
                         marker=nmarker, color=ncolor, ls='', 
                         label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
+                #ax[0].errorbar(self.data[n]['time']-int(self.alltime.min()), self.data[n]['detrend'] + \
+                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500)) + \
+                #        self.parameters.get('rv_linear', self.data[n]['priors']['rv_linear'])*(self.data[n]['time']-int(self.alltime.min()-2400000-55500))**2, 
+                #        yerr=self.data[n]['velerr'], 
+                #        marker=nmarker, color=ncolor, ls='', 
+                #        label=rf"{self.data[n]['name']} $\sigma$ = {np.std(self.data[n]['residuals']):.2f} m/s")
 
         ax[1].axhline(0, color='k', ls='--', alpha=0.5)
         ax[1].set_xlim([-0.5,0.5])
