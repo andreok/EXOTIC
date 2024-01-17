@@ -111,6 +111,7 @@ def transit(times, values):
         print(np.array(values['omega']))
         print(np.array(values['tmid']))
         print(np.array(times))
+        print(np.array(values['rprs']).size)
         model = pytransit('claret', torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])), 
                       torch.from_dlpack(np.array(values['rprs'])), torch.from_dlpack(np.array(values['per'])), 
                       torch.from_dlpack(np.array(values['ars'])), torch.from_dlpack(np.array(values['ecc'])), 
