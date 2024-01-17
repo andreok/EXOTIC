@@ -103,7 +103,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 def transit(times, values):
     try:
         model = pytransit('claret', torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])), 
-                      torch.from_dlpack(np.array(values['rprs'])), torch.tefrom_dlpack(np.array(values['per'])), 
+                      torch.from_dlpack(np.array(values['rprs'])), torch.from_dlpack(np.array(values['per'])), 
                       torch.from_dlpack(np.array(values['ars'])), torch.from_dlpack(np.array(values['ecc'])), 
                       torch.from_dlpack(np.array(values['inc'])), torch.from_dlpack(np.array(values['omega'])),
                       torch.from_dlpack(np.array(values['tmid'])), torch.from_dlpack(np.array(times)), precision=3, n_pars=values['tmid'].size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
