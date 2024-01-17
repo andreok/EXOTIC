@@ -102,25 +102,12 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 def transit(times, values):
     try:
-        #cuda = torch.device('cuda')
-        #model = pytransit('claret', torch.tensor([[values['u0'], values['u1'], values['u2'], values['u3']]], device=cuda), 
-        #              torch.tensor([[values['rprs']]], device=cuda), torch.tensor([[values['per']]], device=cuda), 
-        #              torch.tensor([[values['ars']]], device=cuda), torch.tensor([[values['ecc']]], device=cuda), 
-        #              torch.tensor([[values['inc']]], device=cuda), torch.tensor([[values['omega']]], device=cuda),
-        #              torch.tensor([[values['tmid']]], device=cuda), torch.from_numpy(times).float().cuda(), precision=3, n_pars=values['tmid'].size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
-        #return model.cpu().numpy() # must convert from PyTorch GPU Tensors to Numpy arrays for CPU
-        #model = pytransit('claret', torch.from_dlpack(dlpack.from_numpy([values['u0'], values['u1'], values['u2'], values['u3']])), 
-        #              torch.from_dlpack(dlpack.from_numpy(values['rprs'])), torch.tefrom_dlpack(dlpack.from_numpy(values['per'])), 
-        #              torch.from_dlpack(dlpack.from_numpy(values['ars'])), torch.from_dlpack(dlpack.from_numpy(values['ecc'])), 
-        #              torch.from_dlpack(dlpack.from_numpy(values['inc'])), torch.from_dlpack(dlpack.from_numpy(values['omega'])),
-        #              torch.from_dlpack(dlpack.from_numpy(values['tmid'])), torch.from_dlpack(dlpack.from_numpy(times)), precision=3, n_pars=values['tmid'].size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
-        #return dlpack.to_numpy(model) # must convert from PyTorch GPU Tensors to numpy arrays for CPU
-        model = pytransit('claret', torch.from_dlpack([values['u0'], values['u1'], values['u2'], values['u3']]), 
-                      torch.from_dlpack(values['rprs']), torch.tefrom_dlpack(values['per']), 
-                      torch.from_dlpack(values['ars']), torch.from_dlpack(values['ecc']), 
-                      torch.from_dlpack(values['inc']), torch.from_dlpack(values['omega']),
-                      torch.from_dlpack(values['tmid']), torch.from_dlpack(times), precision=3, n_pars=values['tmid'].size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
-        return np.from_dlpack(model).asnumpy() # must convert from PyTorch GPU Tensors to cupy arrays for CPU
+        model = pytransit('claret', torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])), 
+                      torch.from_dlpack(np.array(values['rprs'])), torch.tefrom_dlpack(np.array(values['per'])), 
+                      torch.from_dlpack(np.array(values['ars'])), torch.from_dlpack(np.array(values['ecc'])), 
+                      torch.from_dlpack(np.array(values['inc'])), torch.from_dlpack(np.array(values['omega'])),
+                      torch.from_dlpack(np.array(values['tmid'])), torch.from_dlpack(np.array(times)), precision=3, n_pars=values['tmid'].size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
+        return np.asnumpy(np.from_dlpack(model)) # must convert from PyTorch GPU Tensors to cupy arrays for CPU
     #except AttributeError:
     #except TypeError:
     except NameError:
