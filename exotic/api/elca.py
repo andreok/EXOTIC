@@ -102,15 +102,15 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 def transit(times, values):
     try:
-        print(np.array([values['u0'], values['u1'], values['u2'], values['u3']]))
-        print(np.array(values['rprs']))
-        print(np.array(values['per']))
-        print(np.array(values['ars']))
-        print(np.array(values['ecc']))
-        print(np.array(values['inc']))
-        print(np.array(values['omega']))
-        print(np.array(values['tmid']))
-        print(np.array(times))
+        print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])))
+        print(torch.from_dlpack(np.array(values['rprs'])))
+        print(torch.from_dlpack(np.array(values['per'])))
+        print(torch.from_dlpack(np.array(values['ars'])))
+        print(torch.from_dlpack(np.array(values['ecc'])))
+        print(torch.from_dlpack(np.array(values['inc'])))
+        print(torch.from_dlpack(np.array(values['omega'])))
+        print(torch.from_dlpack(np.array(values['tmid'])))
+        print(torch.from_dlpack(np.array(times)))
         print(np.array(values['rprs']).size)
         model = pytransit('claret', torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])), 
                       torch.from_dlpack(np.array(values['rprs'])), torch.from_dlpack(np.array(values['per'])), 
