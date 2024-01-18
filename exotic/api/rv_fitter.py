@@ -342,10 +342,15 @@ class rv_fitter(lc_fitter):
                     self.parameters[k] = self.data[n]['priors'][k]
                     self.errors[k] = self.data[n]['errors'][k]
 
+            #if 'rv_linear' not in gfreekeys:
+            #    self.data[n]['priors']['rv_linear'] = 0
+            #if 'rv_quad' not in gfreekeys:
+            #    self.data[n]['priors']['rv_quad'] = 0
+
             dtime = self.data[n]['time'] - self.data[n]['time'].min()
-            self.data[n]['model'] = rv_model(self.data[n]['time'], self.data[n]['priors']) + \
-                                    self.data[n]['priors']['rv_linear']*dtime + \
-                                    self.data[n]['priors']['rv_quad']*dtime**2
+            self.data[n]['model'] = rv_model(self.data[n]['time'], self.data[n]['priors']) #+ \
+                                    #self.data[n]['priors']['rv_linear']*dtime + \
+                                    #self.data[n]['priors']['rv_quad']*dtime**2
 
             detrend = self.data[n]['vel'] - self.data[n]['model']
             self.data[n]['priors']['offset'] = np.mean(detrend) # TODO use monte carlo
@@ -361,8 +366,8 @@ class rv_fitter(lc_fitter):
         rv = rv_model(self.alltime, self.data[0]['priors'])
 
         # apply trend to RV data
-        self.allmodel = rv + self.data[n]['priors']['rv_linear']*dalltime + \
-                             self.data[n]['priors']['rv_quad']*dalltime**2
+        self.allmodel = rv #+ self.data[n]['priors']['rv_linear']*dalltime + \
+                             #self.data[n]['priors']['rv_quad']*dalltime**2
         self.allphase = (self.alltime-self.data[n]['priors']['tmid'])/self.parameters['per']
 
         # compute acceleration of the star
