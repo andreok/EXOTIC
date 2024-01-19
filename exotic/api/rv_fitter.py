@@ -256,8 +256,7 @@ class rv_fitter(lc_fitter):
             self.data[0]['priors']['ars'] = ars
             self.data[0]['priors']['mu'] = mu
             #self.data[0]['priors']['omega'] = omega + omega_offset
-            #orbit = rv_model(alltime, self.data[0]['priors'])
-            orbit = rv_model(alltime - 55500 - 2400000) if alltime[0] > 2400000 else (alltime - 55500)
+            orbit = rv_model(alltime, self.data[0]['priors'])
             
             # apply trend to RV data
             orbit += dalltime * self.data[0]['priors']['rv_linear'] + \
