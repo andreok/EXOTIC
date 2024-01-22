@@ -903,16 +903,14 @@ class glc_fitter(lc_fitter):
             sampler = ReactiveNestedSampler(freekeys, loglike, prior_transform)
             nsteps = 2 * len(freekeys)
             #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
-            sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
-            #try:
-            #    #sampler.stepsampler = ultranest.popstepsampler.PopulationRandomWalkSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_region_random_direction)
-            #    sampler.stepsampler = ultranest.popstepsampler.PopulationSliceSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_cube_oriented_direction)
-            #except NameError:
-            #    #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
-            #    sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
+            #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
             try:
+                #sampler.stepsampler = ultranest.popstepsampler.PopulationRandomWalkSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_region_random_direction)
+                sampler.stepsampler = ultranest.popstepsampler.PopulationSliceSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_cube_oriented_direction)
                 self.results = np.asnumpy(np.from_dlpack(sampler.run(max_ncalls=2e6, show_status=True))) # pached
-            except AttributeError:
+            except NameError:
+                #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
+                sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
                 self.results = sampler.run(max_ncalls=2e6, show_status=True) # pached
         else:
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=False, viz_callback=noop)
