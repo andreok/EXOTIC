@@ -907,8 +907,8 @@ class glc_fitter(lc_fitter):
             #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
             #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
             try:
-                #sampler.stepsampler = ultranest.popstepsampler.PopulationRandomWalkSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_region_random_direction)
-                sampler.stepsampler = ultranest.popstepsampler.PopulationSliceSampler(nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_cube_oriented_direction)
+                #sampler.stepsampler = ultranest.popstepsampler.PopulationRandomWalkSampler(popsize=40,nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_region_random_direction)
+                sampler.stepsampler = ultranest.popstepsampler.PopulationSliceSampler(popsize=40,nsteps=nsteps,generate_direction=ultranest.popstepsampler.generate_cube_oriented_direction)
                 self.results = np.asnumpy(np.from_dlpack(sampler.run(max_ncalls=2e6, show_status=True))) # pached
             except NameError:
                 #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
