@@ -859,7 +859,7 @@ class glc_fitter(lc_fitter):
                 # global keys
                 for j, key in enumerate(gfreekeys):
                     try:
-                        self.lc_data[i]['priors'][key] = np.asnumpy(jax.dlpack.from_dlpack(pars[j]))
+                        self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j]))
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j]
 
