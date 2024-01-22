@@ -754,10 +754,12 @@ class glc_fitter(lc_fitter):
         for i in range(nobs):
             lfreekeys.append(list(self.local_bounds[i].keys()))
             boundarray.extend([self.local_bounds[i][k] for k in lfreekeys[-1]])
+            print((list(self.local_bounds[i].keys()), [self.local_bounds[i][k] for k in lfreekeys[-1]]))
         try:
             boundarray = np.asnumpy(np.array(boundarray))
         except AttributeError:
             boundarray = np.array(boundarray)
+        print(boundarray)
 
         # fit individual light curves to constrain priors
         if self.individual_fit:
@@ -844,8 +846,11 @@ class glc_fitter(lc_fitter):
             bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
         except AttributeError:
             bounddiff = np.diff(boundarray,1).reshape(-1)
+        print(bounddiff)
         def prior_transform(upars): # this runs on GPU via JAX arrays
             try:
+                print(jax.dlpack.from_dlpack(np.array(boundarray[:,0])))
+                print(jax.dlpack.from_dlpack(np.array(bounddiff)))
                 return (jax.dlpack.from_dlpack(np.array(boundarray[:,0])) + jax.dlpack.from_dlpack(np.array(bounddiff))*upars)
             except NameError:
                 return (boundarray[:,0] + bounddiff*upars)
