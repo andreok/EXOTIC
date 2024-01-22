@@ -849,8 +849,8 @@ class glc_fitter(lc_fitter):
         print(bounddiff)
         def prior_transform(upars): # this runs on GPU via JAX arrays
             try:
-                #print(jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)))
-                #print(jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float64)))
+                print(jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)))
+                print(jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float64)))
                 return (jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)) + jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float64))*upars)
             except NameError:
                 return (boundarray[:,0] + bounddiff*upars)
