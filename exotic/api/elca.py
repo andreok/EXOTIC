@@ -49,10 +49,10 @@ try:
         del globals()['np']
     import cupy as np
     import torch
-    #import dlpack
-    from pylightcurve_torch.functional import transit as pytransit
-    #import jax
-    #import jax.numpy as jnp
+    import jax
+    import jax.numpy as jnp
+    from pylightcurve.models.exoplanet_lc import transit as pytransit
+    #from pylightcurve_torch.functional import transit as pytransit
 except ImportError:
     import numpy as np
     from pylightcurve.models.exoplanet_lc import transit as pytransit
@@ -101,31 +101,36 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 
 def transit(times, values):
-    try:
-        print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])))
-        print(torch.from_dlpack(np.array(values['rprs'])))
-        print(torch.from_dlpack(np.array(values['per'])))
-        print(torch.from_dlpack(np.array(values['ars'])))
-        print(torch.from_dlpack(np.array(values['ecc'])))
-        print(torch.from_dlpack(np.array(values['inc'])))
-        print(torch.from_dlpack(np.array(values['omega'])))
-        print(torch.from_dlpack(np.array(values['tmid'])))
-        print(torch.from_dlpack(np.array(times)))
-        print(np.array(values['rprs']).size)
-        model = pytransit('claret', torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])), 
-                      torch.from_dlpack(np.array(values['rprs'])), torch.from_dlpack(np.array(values['per'])), 
-                      torch.from_dlpack(np.array(values['ars'])), torch.from_dlpack(np.array(values['ecc'])), 
-                      torch.from_dlpack(np.array(values['inc'])), torch.from_dlpack(np.array(values['omega'])),
-                      torch.from_dlpack(np.array(values['tmid'])), torch.from_dlpack(np.array(times)), precision=3, n_pars=np.array(values['rprs']).size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
-        return np.asnumpy(np.from_dlpack(model)) # must convert from PyTorch GPU Tensors to cupy arrays for CPU
+    #try:
+        #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])))
+        #print(torch.from_dlpack(np.array(values['rprs'])))
+        #print(torch.from_dlpack(np.array(values['per'])))
+        #print(torch.from_dlpack(np.array(values['ars'])))
+        #print(torch.from_dlpack(np.array(values['ecc'])))
+        #print(torch.from_dlpack(np.array(values['inc'])))
+        #print(torch.from_dlpack(np.array(values['omega'])))
+        #print(torch.from_dlpack(np.array(values['tmid'])))
+        #print(torch.from_dlpack(np.array(times)))
+        #print(np.array(values['rprs']).size)
+        #model = pytransit('claret', torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']])), 
+        #              torch.from_dlpack(np.array(values['rprs'])), torch.from_dlpack(np.array(values['per'])), 
+        #              torch.from_dlpack(np.array(values['ars'])), torch.from_dlpack(np.array(values['ecc'])), 
+        #              torch.from_dlpack(np.array(values['inc'])), torch.from_dlpack(np.array(values['omega'])),
+        #              torch.from_dlpack(np.array(values['tmid'])), torch.from_dlpack(np.array(times)), precision=3, n_pars=np.array(values['rprs']).size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
+        #return np.asnumpy(np.from_dlpack(model)) # must convert back from PyTorch GPU Tensors to Numpy arrays for CPU
+        #model = pytransit(np.asnumpy(np.from_dlpack([values['u0'], values['u1'], values['u2'], values['u3']])),
+        #              np.asnumpy(np.from_dlpack(values['rprs'])), np.asnumpy(np.from_dlpack(values['per'])), np.asnumpy(np.from_dlpack(values['ars'])),
+        #              np.asnumpy(np.from_dlpack(values['ecc'])), np.asnumpy(np.from_dlpack(values['inc'])), np.asnumpy(np.from_dlpack(values['omega'])),
+        #              np.asnumpy(np.from_dlpack(values['tmid'])), times, method='claret', precision=3)
+        #return jax.dlpack.from_dlpack(np.array(model)) # must convert back from Numpy array to JAX array for GPU
     #except AttributeError:
     #except TypeError:
-    except NameError:
-        model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
+    #except NameError:
+    model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, method='claret', precision=3)
-        return model
+    return model
 
 @jit(nopython=True)
 def get_phase(times, per, tmid):
@@ -839,10 +844,13 @@ class glc_fitter(lc_fitter):
             bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
         except AttributeError:
             bounddiff = np.diff(boundarray,1).reshape(-1)
-        def prior_transform(upars):
-            return (boundarray[:,0] + bounddiff*upars)
+        def prior_transform(upars): # this runs on GPU via JAX arrays
+            try:
+                return (jax.dlpack.from_dlpack(np.array(boundarray[:,0])) + jax.dlpack.from_dlpack(np.array(bounddiff))*upars)
+            except NameError:
+                return (boundarray[:,0] + bounddiff*upars)
 
-        def loglike(pars):
+        def loglike(pars): # this runs on GPU via JAX arrays
             chi2 = 0
 
             # for each light curve
@@ -850,12 +858,18 @@ class glc_fitter(lc_fitter):
 
                 # global keys
                 for j, key in enumerate(gfreekeys):
-                    self.lc_data[i]['priors'][key] = pars[j]
+                    try:
+                        self.lc_data[i]['priors'][key] = np.asnumpy(jax.dlpack.from_dlpack(pars[j]))
+                    except AttributeError:
+                        self.lc_data[i]['priors'][key] = pars[j]
 
                 # local keys
                 ti = sum([len(self.local_bounds[k]) for k in range(i)])
                 for j, key in enumerate(lfreekeys[i]):
-                    self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
+                    try:
+                        self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
+                    except AttributeError:
+                        self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
                 # compute model
                 model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
@@ -896,7 +910,10 @@ class glc_fitter(lc_fitter):
             #except NameError:
             #    #sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_mixture_random_direction)
             #    sampler.stepsampler = ultranest.stepsampler.SliceSampler(nsteps=nsteps,generate_direction=ultranest.stepsampler.generate_cube_oriented_direction)
-            self.results = sampler.run(max_ncalls=2e6, show_status=True) # pached
+            try:
+                self.results = np.asnumpy(np.from_dlpack(sampler.run(max_ncalls=2e6, show_status=True))) # pached
+            except AttributeError:
+                self.results = sampler.run(max_ncalls=2e6, show_status=True) # pached
         else:
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=False, viz_callback=noop)
 
