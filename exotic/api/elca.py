@@ -756,7 +756,7 @@ class glc_fitter(lc_fitter):
             boundarray.extend([self.local_bounds[i][k] for k in lfreekeys[-1]])
             print((list(self.local_bounds[i].keys()), [self.local_bounds[i][k] for k in lfreekeys[-1]]))
         try:
-            boundarray = np.asnumpy(np.array(boundarray))
+            boundarray = np.asnumpy(np.array(boundarray).astype(np.float32))
         except AttributeError:
             boundarray = np.array(boundarray)
         print(boundarray)
@@ -849,8 +849,8 @@ class glc_fitter(lc_fitter):
         print(bounddiff)
         def prior_transform(upars): # this runs on GPU via JAX arrays
             try:
-                print(jax.dlpack.from_dlpack(np.array(boundarray[:,0])))
-                print(jax.dlpack.from_dlpack(np.array(bounddiff)))
+                #print(jax.dlpack.from_dlpack(np.array(boundarray[:,0]).astype(np.float32)))
+                #print(jax.dlpack.from_dlpack(np.array(bounddiff).astype(np.float32)))
                 return (jax.dlpack.from_dlpack(np.array(boundarray[:,0])) + jax.dlpack.from_dlpack(np.array(bounddiff))*upars)
             except NameError:
                 return (boundarray[:,0] + bounddiff*upars)
