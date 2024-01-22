@@ -756,7 +756,7 @@ class glc_fitter(lc_fitter):
             boundarray.extend([self.local_bounds[i][k] for k in lfreekeys[-1]])
             print((list(self.local_bounds[i].keys()), [self.local_bounds[i][k] for k in lfreekeys[-1]]))
         try:
-            boundarray = np.asnumpy(np.array(boundarray).astype(np.float32))
+            boundarray = np.asnumpy(np.array(boundarray, dtype=np.float32))
         except AttributeError:
             boundarray = np.array(boundarray)
         print(boundarray)
@@ -843,15 +843,15 @@ class glc_fitter(lc_fitter):
 
         # transform unit cube to prior volume
         try:
-            bounddiff = np.asnumpy(np.diff(np.array(boundarray),1).reshape(-1))
+            bounddiff = np.asnumpy(np.diff(np.array(boundarray, dtype=np.float32),1).reshape(-1))
         except AttributeError:
             bounddiff = np.diff(boundarray,1).reshape(-1)
         print(bounddiff)
         def prior_transform(upars): # this runs on GPU via JAX arrays
             try:
-                #print(jax.dlpack.from_dlpack(np.array(boundarray[:,0]).astype(np.float32)))
-                #print(jax.dlpack.from_dlpack(np.array(bounddiff).astype(np.float32)))
-                return (jax.dlpack.from_dlpack(np.array(boundarray[:,0])) + jax.dlpack.from_dlpack(np.array(bounddiff))*upars)
+                #print(jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float32)))
+                #print(jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float32)))
+                return (jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float32)) + jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float32))*upars)
             except NameError:
                 return (boundarray[:,0] + bounddiff*upars)
 
@@ -881,18 +881,18 @@ class glc_fitter(lc_fitter):
                 # compute model
                 model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
                 try:
-                    model = np.asnumpy(np.array(model) * np.exp(np.array(self.lc_data[i]['priors']['a2'])*np.array(self.lc_data[i]['airmass'])))
+                    model = np.asnumpy(np.array(model, dtype=np.float32) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float32)*np.array(self.lc_data[i]['airmass'], dtype=np.float32)))
                 except AttributeError:
                     model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
                 detrend = self.lc_data[i]['flux']/model
                 try:
-                    model = np.asnumpy(np.array(model) * np.mean(np.array(detrend)))
+                    model = np.asnumpy(np.array(model, dtype=np.float32) * np.mean(np.array(detrend, dtype=np.float32)))
                 except AttributeError:
                     model *= np.mean(detrend)
 
                 # add to chi2
                 try:
-                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'])-np.array(model))/np.array(self.lc_data[i]['ferr']))**2 ).item()
+                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float32)-np.array(model, dtype=np.float32))/np.array(self.lc_data[i]['ferr'], dtype=np.float32))**2 ).item()
                 except AttributeError:
                     chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
 
@@ -972,12 +972,12 @@ class glc_fitter(lc_fitter):
             # solve for a1
             model = transit(self.lc_data[n]['time'], self.lc_data[n]['priors'])
             try:
-                airmass = np.asnumpy(np.exp(np.array(self.lc_data[n]['airmass'])*np.array(self.lc_data[n]['priors']['a2'])))
+                airmass = np.asnumpy(np.exp(np.array(self.lc_data[n]['airmass'], dtype=np.float32)*np.array(self.lc_data[n]['priors']['a2'], dtype=np.float32)))
             except AttributeError:
                 airmass = np.exp(self.lc_data[n]['airmass']*self.lc_data[n]['priors']['a2'])
             detrend = self.lc_data[n]['flux']/(model*airmass)
             try:
-                self.lc_data[n]['priors']['a1'] = np.asnumpy(np.mean(np.array(detrend)))
+                self.lc_data[n]['priors']['a1'] = np.asnumpy(np.mean(np.array(detrend, dtype=np.float32)))
             except AttributeError:
                 self.lc_data[n]['priors']['a1'] = np.mean(detrend)
             self.lc_data[n]['residuals'] = self.lc_data[n]['flux'] - model*airmass*self.lc_data[n]['priors']['a1']
@@ -992,11 +992,11 @@ class glc_fitter(lc_fitter):
         # create an average value from all the local fits
         if rprs_in_local:
             try:
-                self.parameters['rprs'] = np.mean(local_rprs)
-                self.errors['rprs'] = np.std(local_rprs)
-            except AttributeError:
                 self.parameters['rprs'] = np.asnumpy(np.mean(np.array(local_rprs)))
                 self.errors['rprs'] = np.asnumpy(np.std(np.array(local_rprs)))
+            except AttributeError:
+                self.parameters['rprs'] = np.mean(local_rprs)
+                self.errors['rprs'] = np.std(local_rprs)
 
         #import pdb; pdb.set_trace()
 
