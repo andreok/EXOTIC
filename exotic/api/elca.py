@@ -61,11 +61,11 @@ from scipy.optimize import least_squares
 from scipy.signal import savgol_filter
 try:
     from ultranest import ReactiveNestedSampler
-    import ultranest.stepsampler
-    #if 'jax' in globals():
-    #    import ultranest.popstepsampler
-    #else:
-    #    import ultranest.stepsampler
+    #import ultranest.stepsampler
+    if 'jax' in globals():
+        import ultranest.popstepsampler
+    else:
+        import ultranest.stepsampler
 except ImportError:
     import dynesty
     import dynesty.plotting
