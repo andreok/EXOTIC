@@ -860,6 +860,8 @@ class glc_fitter(lc_fitter):
                 for j, key in enumerate(gfreekeys):
                     try:
                         self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j]))
+                    except ValueError:
+                        continue # dlpack already consumed before
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j]
 
