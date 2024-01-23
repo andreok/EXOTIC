@@ -101,7 +101,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
     return gw, nearest.astype(int)
 
 
-def transit(times, values):
+def transit(times, values): # assuming only cupy arrays, if GPU
     #try:
         #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)))
         #print(torch.from_dlpack(np.array(values['rprs'], dtype=np.float64)))
@@ -120,19 +120,19 @@ def transit(times, values):
         #              torch.from_dlpack(np.array(values['tmid'], dtype=np.float64)), torch.from_dlpack(np.array(times, dtype=np.float64)), 
         #              precision=3, n_pars=np.array(values['rprs'], dtype=np.float64).size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
         #return np.asnumpy(np.from_dlpack(model)) # must convert back from PyTorch GPU Tensors to Numpy arrays for CPU
-        #model = pytransit(np.asnumpy(np.from_dlpack([values['u0'], values['u1'], values['u2'], values['u3']])),
-        #              np.asnumpy(np.from_dlpack(values['rprs'])), np.asnumpy(np.from_dlpack(values['per'])), np.asnumpy(np.from_dlpack(values['ars'])),
-        #              np.asnumpy(np.from_dlpack(values['ecc'])), np.asnumpy(np.from_dlpack(values['inc'])), np.asnumpy(np.from_dlpack(values['omega'])),
-        #              np.asnumpy(np.from_dlpack(values['tmid'])), times, method='claret', precision=3)
-        #return jax.dlpack.from_dlpack(np.array(model)) # must convert back from Numpy array to JAX array for GPU
+        model = pytransit(np.asnumpy([values['u0'], values['u1'], values['u2'], values['u3']]),
+                      np.asnumpy(values['rprs']), np.asnumpy(values['per']), np.asnumpy(values['ars']),
+                      np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
+                      np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
+        return np.array(model, dtype=np.float64) # must convert back from Numpy array to cupy array for GPU
     #except AttributeError:
     #except TypeError:
-    #except NameError:
-    model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
+    except NameError:
+        model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, method='claret', precision=3)
-    return model
+        return model
 
 @jit(nopython=True)
 def get_phase(times, per, tmid):
@@ -857,7 +857,7 @@ class glc_fitter(lc_fitter):
             except NameError:
                 return (boundarray[:,0] + bounddiff*upars)
 
-        def loglike(pars): # this runs on GPU via JAX arrays
+        def loglike(pars): # this runs on GPU via JAX arrays, but maniulates only Cupy arrays internally
             chi2 = 0
 
             # for each light curve
@@ -867,7 +867,8 @@ class glc_fitter(lc_fitter):
                 for j, key in enumerate(gfreekeys):
                     try:
                         dlpack = pars[j].toDlpack()
-                        self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
+                        #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
                         del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j]
@@ -876,27 +877,32 @@ class glc_fitter(lc_fitter):
                 ti = sum([len(self.local_bounds[k]) for k in range(i)])
                 for j, key in enumerate(lfreekeys[i]):
                     try:
-                        self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
+                        #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(pars[j+ti+len(gfreekeys)])
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
                 # compute model
                 model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
-                try:
-                    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
-                except AttributeError:
-                    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
-                detrend = self.lc_data[i]['flux']/model
-                try:
-                    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
-                except AttributeError:
-                    model *= np.mean(detrend)
+                #try:
+                #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
+                #except AttributeError:
+                #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
+                model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
+                #detrend = self.lc_data[i]['flux']/model
+                detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
+                #try:
+                #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
+                #except AttributeError:
+                #    model *= np.mean(detrend)
+                model *= np.mean(detrend)
 
                 # add to chi2
-                try:
-                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                except AttributeError:
-                    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+                #try:
+                #    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+                #except AttributeError:
+                #    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+                chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 )
 
             # maximization metric for nested sampling
             return -0.5*chi2
@@ -926,7 +932,10 @@ class glc_fitter(lc_fitter):
 
         self.quantiles = {}
         self.errors = {}
-        self.parameters = self.lc_data[0]['priors'].copy()
+        try:
+            self.parameters = np.asnumpy(self.lc_data[0]['priors']).copy()
+        except AttributeError:
+            self.parameters = self.lc_data[0]['priors'].copy()
 
         for i, key in enumerate(freekeys):
             self.parameters[key] = self.results['maximum_likelihood']['point'][i]
@@ -972,7 +981,10 @@ class glc_fitter(lc_fitter):
                     local_rprs_err.append(self.lc_data[n]['errors'][k])
 
             # solve for a1
-            model = transit(self.lc_data[n]['time'], self.lc_data[n]['priors'])
+            try:
+                model = np.asnumpy(transit(self.lc_data[n]['time'], self.lc_data[n]['priors']))
+            except AttributeError:
+                model = transit(self.lc_data[n]['time'], self.lc_data[n]['priors'])
             try:
                 airmass = np.asnumpy(np.exp(np.array(self.lc_data[n]['airmass'], dtype=np.float64)*np.array(self.lc_data[n]['priors']['a2'], dtype=np.float64)))
             except AttributeError:
