@@ -862,10 +862,10 @@ class glc_fitter(lc_fitter):
 
             # for each light curve
             for i in range(nobs):
-                print(i)
+                #print(i)
                 # global keys
                 for j, key in enumerate(gfreekeys):
-                    print((j,key))
+                    #print((j,key))
                     try:
                         dlpack = pars[j].toDlpack()
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
@@ -877,7 +877,7 @@ class glc_fitter(lc_fitter):
                 # local keys
                 ti = sum([len(self.local_bounds[k]) for k in range(i)])
                 for j, key in enumerate(lfreekeys[i]):
-                    print((j,key))
+                    #print((j,key))
                     try:
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
                         dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
@@ -887,33 +887,33 @@ class glc_fitter(lc_fitter):
                         self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
                 # compute model
-                print(self.lc_data[i]['time'])
-                print(self.lc_data[i]['priors'])
+                #print(self.lc_data[i]['time'])
+                #print(self.lc_data[i]['priors'])
                 model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
-                print(model)
+                #print(model)
                 #try:
                 #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
                 #except AttributeError:
                 #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
                 model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
-                print(model)
+                #print(model)
                 #detrend = self.lc_data[i]['flux']/model
                 detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
-                print(detrend)
+                #print(detrend)
                 #try:
                 #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
                 #except AttributeError:
                 #    model *= np.mean(detrend)
                 model *= np.mean(detrend)
-                print(model)
+                #print(model)
 
                 # add to chi2
-                #try:
-                #    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                #except AttributeError:
-                #    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
-                chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 )
-                print(chi2)
+                try:
+                    #chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+                except AttributeError:
+                    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+                #print(chi2)
 
             # maximization metric for nested sampling
             return -0.5*chi2
