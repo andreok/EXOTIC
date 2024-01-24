@@ -919,7 +919,10 @@ class glc_fitter(lc_fitter):
         for i in range(nobs): 
             self.lc_data[i]['time'] = np.array(self.lc_data[i]['time'], dtype=np.float64)
             for k in self.lc_data[i]['priors'].keys():
-                self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
+                try:
+                    self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
+                except AttributeError:
+                    pass
 
         noop = lambda *args, **kwargs: None
         if self.verbose:
@@ -938,14 +941,19 @@ class glc_fitter(lc_fitter):
         else:
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=False, viz_callback=noop)
 
-        try:
-            # for each light curve
-            for i in range(nobs): 
-                self.lc_data[i]['time'] = np.asnumpy(self.lc_data[i]['time'])
-                for k in self.lc_data[i]['priors'].keys():
+        # for each light curve
+        for i in range(nobs): 
+            try:
+                self.lc_data[i]['time'] = np.asnumpy(self.lc_data[i]['time'])       
+            except AttributeError:
+                pass
+        # for each light curve
+        for i in range(nobs):
+            for k in self.lc_data[i]['priors'].keys():
+                try:
                     self.lc_data[i]['priors'][k] = np.asnumpy(self.lc_data[i]['priors']).item()
-        except AttributeError:
-            pass
+                except AttributeError:
+                    pass
 
         self.quantiles = {}
         self.errors = {}
