@@ -120,7 +120,7 @@ def transit(times, values): # assuming only cupy arrays, if GPU
         #              torch.from_dlpack(np.array(values['tmid'], dtype=np.float64)), torch.from_dlpack(np.array(times, dtype=np.float64)), 
         #              precision=3, n_pars=np.array(values['rprs'], dtype=np.float64).size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
         #return np.asnumpy(np.from_dlpack(model)) # must convert back from PyTorch GPU Tensors to Numpy arrays for CPU
-        model = pytransit(np.asnumpy([values['u0'], values['u1'], values['u2'], values['u3']]),
+        model = pytransit(np.asnumpy(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)),
                       np.asnumpy(values['rprs']), np.asnumpy(values['per']), np.asnumpy(values['ars']),
                       np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
                       np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
@@ -943,7 +943,7 @@ class glc_fitter(lc_fitter):
             for i in range(nobs): 
                 self.lc_data[i]['time'] = np.asnumpy(self.lc_data[i]['time'])
                 for k in self.lc_data[i]['priors'].keys():
-                    self.lc_data[i]['priors'][k] = np.asnumpy(self.lc_data[i]['priors'])
+                    self.lc_data[i]['priors'][k] = np.asnumpy(self.lc_data[i]['priors']).item()
         except AttributeError:
             pass
 
