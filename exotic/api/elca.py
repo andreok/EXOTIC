@@ -918,7 +918,8 @@ class glc_fitter(lc_fitter):
         # for each light curve
         for i in range(nobs): 
             self.lc_data[i]['time'] = np.array(self.lc_data[i]['time'], dtype=np.float64)
-            self.lc_data[i]['priors'] = np.array(self.lc_data[i]['priors'], dtype=np.float64)
+            for k in self.lc_data[i]['priors'].keys():
+                self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'], dtype=np.float64)
 
         noop = lambda *args, **kwargs: None
         if self.verbose:
@@ -941,7 +942,8 @@ class glc_fitter(lc_fitter):
             # for each light curve
             for i in range(nobs): 
                 self.lc_data[i]['time'] = np.asnumpy(self.lc_data[i]['time'])
-                self.lc_data[i]['priors'] = np.asnumpy(self.lc_data[i]['priors'])
+                for k in self.lc_data[i]['priors'].keys():
+                    self.lc_data[i]['priors'][k] = np.asnumpy(self.lc_data[i]['priors'])
         except AttributeError:
             pass
 
