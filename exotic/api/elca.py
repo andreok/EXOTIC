@@ -878,7 +878,9 @@ class glc_fitter(lc_fitter):
                 for j, key in enumerate(lfreekeys[i]):
                     try:
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(pars[j+ti+len(gfreekeys)])
+                        dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
+                        del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
@@ -913,6 +915,11 @@ class glc_fitter(lc_fitter):
                 #clean_name = self.lc_data[n].get('name', n).replace(' ','_').replace('(','').replace(')','').replace('[','').replace(']','').replace('-','_').split('-')[0]
                 freekeys.append(f"local_{k}_{n}")
 
+        # for each light curve
+        for i in range(nobs): 
+            self.lc_data[i]['time'] = np.array(self.lc_data[i]['time'], dtype=np.float64)
+            self.lc_data[i]['priors'] = np.array(self.lc_data[i]['priors'], dtype=np.float64)
+
         noop = lambda *args, **kwargs: None
         if self.verbose:
             sampler = ReactiveNestedSampler(freekeys, loglike, prior_transform)
@@ -929,6 +936,14 @@ class glc_fitter(lc_fitter):
                 self.results = sampler.run(max_ncalls=2e6, show_status=True) # pached
         else:
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=False, viz_callback=noop)
+
+        try:
+            # for each light curve
+            for i in range(nobs): 
+                self.lc_data[i]['time'] = np.asnumpy(self.lc_data[i]['time'])
+                self.lc_data[i]['priors'] = np.asnumpy(self.lc_data[i]['priors'])
+        except AttributeError:
+            pass
 
         self.quantiles = {}
         self.errors = {}
