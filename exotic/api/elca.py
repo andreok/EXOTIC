@@ -402,9 +402,10 @@ gauss60 = [
 ]
 
 # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/analysis/numerical_integration.py
-gauss_table = [np.swapaxes(gauss0, 0, 1), np.swapaxes(gauss10, 0, 1), np.swapaxes(gauss20, 0, 1),
-               np.swapaxes(gauss30, 0, 1), np.swapaxes(gauss40, 0, 1), np.swapaxes(gauss50, 0, 1),
-               np.swapaxes(gauss60, 0, 1)]
+gauss_table = [np.swapaxes(np.array(gauss0, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss10, dtype=np.float64), 0, 1), 
+               np.swapaxes(np.array(gauss20, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss30, dtype=np.float64), 0, 1), 
+               np.swapaxes(np.array(gauss40, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss50, dtype=np.float64), 0, 1),
+               np.swapaxes(np.array(gauss60, dtype=np.float64), 0, 1)]
 
 def gauss_numerical_integration(f, x1, x2, precision, *f_args):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/analysis/numerical_integration.py
