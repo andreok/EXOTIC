@@ -102,7 +102,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
 
 
 def transit(times, values): # assuming only cupy arrays, if GPU
-    #try:
+    try:
         #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)))
         #print(torch.from_dlpack(np.array(values['rprs'], dtype=np.float64)))
         #print(torch.from_dlpack(np.array(values['per'], dtype=np.float64)))
@@ -125,9 +125,9 @@ def transit(times, values): # assuming only cupy arrays, if GPU
                       np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
                       np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
         return np.array(model, dtype=np.float64) # must convert back from Numpy array to cupy array for GPU
-    #except AttributeError:
+    except AttributeError:
     #except TypeError:
-    except NameError:
+    #except NameError:
         model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
@@ -857,7 +857,7 @@ class glc_fitter(lc_fitter):
             except NameError:
                 return (boundarray[:,0] + bounddiff*upars)
 
-        def loglike(pars): # this runs on GPU via JAX arrays, but maniulates only Cupy arrays internally
+        def loglike(pars): # this runs on GPU via JAX arrays, but manipulates only Cupy arrays internally
             chi2 = 0
 
             # for each light curve
