@@ -52,7 +52,7 @@ try:
     import jax
     import jax.numpy as jnp
     from jax.config import config; config.update('jax_enable_x64', True)
-    from pylightcurve.models.exoplanet_lc import transit as pytransit
+    #from pylightcurve.models.exoplanet_lc import transit as pytransit
     #from pylightcurve_torch.functional import transit as pytransit
 except ImportError:
     import numpy as np
@@ -100,9 +100,188 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
     gw[np.isnan(gw)] = 0.01
     return gw, nearest.astype(int)
 
+def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0): # assuming only cupy arrays, if GPU
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    inclination = inclination * np.pi / 180.0
+    periastron = periastron * np.pi / 180.0
+    ww = ww * np.pi / 180.0
+
+    if eccentricity == 0 and ww == 0:
+        vv = 2 * np.pi * (time_array - mid_time) / period
+        bb = sma_over_rs * np.cos(vv)
+        return [bb * np.sin(inclination), sma_over_rs * np.sin(vv), - bb * np.cos(inclination)]
+
+    if periastron < np.pi / 2:
+        aa = 1.0 * np.pi / 2 - periastron
+    else:
+        aa = 5.0 * np.pi / 2 - periastron
+    bb = 2 * np.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * np.tan(aa / 2))
+    if bb < 0:
+        bb += 2 * np.pi
+    mid_time = float(mid_time) - (period / 2.0 / np.pi) * (bb - eccentricity * np.sin(bb))
+    m = (time_array - mid_time - np.int_((time_array - mid_time) / period) * period) * 2.0 * np.pi / period
+    u0 = m
+    stop = False
+    u1 = 0
+    for ii in range(10000):  # setting a limit of 1k iterations - arbitrary limit
+        u1 = u0 - (u0 - eccentricity * np.sin(u0) - m) / (1 - eccentricity * np.cos(u0))
+        stop = (np.abs(u1 - u0) < 10 ** (-6)).all()
+        if stop:
+            break
+        else:
+            u0 = u1
+    if not stop:
+        raise RuntimeError('Failed to find a solution in 10000 loops')
+
+    vv = 2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity)) * np.tan((u1) / 2))
+    rr = sma_over_rs * (1 - (eccentricity ** 2)) / (np.ones_like(vv) + eccentricity * np.cos(vv))
+
+    aa = np.cos(vv + periastron)
+    bb = np.sin(vv + periastron)
+
+    x = rr * bb * np.sin(inclination)
+    y = rr * (-aa * np.cos(ww) + bb * np.sin(ww) * np.cos(inclination))
+    z = rr * (-aa * np.sin(ww) - bb * np.cos(ww) * np.cos(inclination))
+
+    return [x, y, z]
+    
+integral_r = {
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    'claret': integral_r_claret,
+    'linear': integral_r_linear,
+    'quad': integral_r_quad,
+    'sqrt': integral_r_sqrt,
+    'zero': integral_r_zero
+}
+
+integral_r_f = {
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    'claret': integral_r_f_claret,
+    'linear': integral_r_f_linear,
+    'quad': integral_r_f_quad,
+    'sqrt': integral_r_f_sqrt,
+    'zero': integral_r_f_zero,
+}
+
+def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    return (integral_r[method](limb_darkening_coefficients, rprs)
+            - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
+
+
+def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    if len(z) == 0:
+        return z
+    rr1 = z * np.cos(ww1) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
+    rr1 = np.clip(rr1, 0, 1)
+    rr2 = z * np.cos(ww2) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
+    rr2 = np.clip(rr2, 0, 1)
+    w1 = np.minimum(ww1, ww2)
+    r1 = np.minimum(rr1, rr2)
+    w2 = np.maximum(ww1, ww2)
+    r2 = np.maximum(rr1, rr2)
+    parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
+    partb = integral_r[method](limb_darkening_coefficients, r1) * w2
+    partc = integral_r[method](limb_darkening_coefficients, r2) * (-w1)
+    partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
+    return parta + partb + partc + partd
+
+
+def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    if len(z) == 0:
+        return z
+    rr1 = z * np.cos(ww1) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
+    rr1 = np.clip(rr1, 0, 1)
+    rr2 = z * np.cos(ww2) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
+    rr2 = np.clip(rr2, 0, 1)
+    w1 = np.minimum(ww1, ww2)
+    r1 = np.minimum(rr1, rr2)
+    w2 = np.maximum(ww1, ww2)
+    r2 = np.maximum(rr1, rr2)
+    parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
+    partb = integral_r[method](limb_darkening_coefficients, r1) * (-w1)
+    partc = integral_r[method](limb_darkening_coefficients, r2) * w2
+    partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
+    return parta + partb + partc - partd
+
+def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method='claret', precision=3): # assuming only cupy arrays, if GPU
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+
+    z_over_rs = np.where(z_over_rs < 0, 1.0 + 100.0 * rp_over_rs, z_over_rs)
+    z_over_rs = np.maximum(z_over_rs, 10**(-10))
+
+    # cases
+    zsq = z_over_rs * z_over_rs
+    sum_z_rprs = z_over_rs + rp_over_rs
+    dif_z_rprs = rp_over_rs - z_over_rs
+    sqr_dif_z_rprs = zsq - rp_over_rs ** 2
+    case0 = np.where((z_over_rs == 0) & (rp_over_rs <= 1))
+    case1 = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs <= 1))
+    casea = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs < 1))
+    caseb = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs > 1))
+    case2 = np.where((z_over_rs == rp_over_rs) & (sum_z_rprs <= 1))
+    casec = np.where((z_over_rs == rp_over_rs) & (sum_z_rprs > 1))
+    case3 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs < 1))
+    case4 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs == 1))
+    case5 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs < 1))
+    case6 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs == 1))
+    case7 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs > 1) & (-1 < dif_z_rprs))
+    plus_case = np.concatenate((case1[0], case2[0], case3[0], case4[0], case5[0], casea[0], casec[0]))
+    minus_case = np.concatenate((case3[0], case4[0], case5[0], case6[0], case7[0]))
+    star_case = np.concatenate((case5[0], case6[0], case7[0], casea[0], casec[0]))
+
+    # cross points
+    ph = np.arccos(np.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
+    theta_1 = np.zeros(len(z_over_rs))
+    ph_case = np.concatenate((case5[0], casea[0], casec[0]))
+    theta_1[ph_case] = ph[ph_case]
+    theta_2 = np.arcsin(np.minimum(rp_over_rs / z_over_rs, 1))
+    theta_2[case1] = np.pi
+    theta_2[case2] = np.pi / 2.0
+    theta_2[casea] = np.pi
+    theta_2[casec] = np.pi / 2.0
+    theta_2[case7] = ph[case7]
+
+    # flux_upper
+    plusflux = np.zeros(len(z_over_rs))
+    plusflux[plus_case] = integral_plus_core(method, limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
+                                             theta_1[plus_case], theta_2[plus_case], precision=precision)
+    if len(case0[0]) > 0:
+        plusflux[case0] = integral_centred(method, limb_darkening_coefficients, rp_over_rs, 0.0, np.pi)
+    if len(caseb[0]) > 0:
+        plusflux[caseb] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, np.pi)
+
+    # flux_lower
+    minsflux = np.zeros(len(z_over_rs))
+    minsflux[minus_case] = integral_minus_core(method, limb_darkening_coefficients, rp_over_rs,
+                                               z_over_rs[minus_case], 0.0, theta_2[minus_case], precision=precision)
+
+    # flux_star
+    starflux = np.zeros(len(z_over_rs))
+    starflux[star_case] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, ph[star_case])
+
+    # flux_total
+    total_flux = integral_centred(method, limb_darkening_coefficients, 1, 0.0, 2.0 * np.pi)
+
+    return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
+
+def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
+            mid_time, time_array, method='claret', precision=3): # assuming only cupy arrays, if GPU
+    # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+
+    position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
+
+    projected_distance = np.where(
+        position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
+        np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
+
+    return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
+                             method=method, precision=precision)
 
 def transit(times, values): # assuming only cupy arrays, if GPU
-    try:
+    #try:
         #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)))
         #print(torch.from_dlpack(np.array(values['rprs'], dtype=np.float64)))
         #print(torch.from_dlpack(np.array(values['per'], dtype=np.float64)))
@@ -120,19 +299,19 @@ def transit(times, values): # assuming only cupy arrays, if GPU
         #              torch.from_dlpack(np.array(values['tmid'], dtype=np.float64)), torch.from_dlpack(np.array(times, dtype=np.float64)), 
         #              precision=3, n_pars=np.array(values['rprs'], dtype=np.float64).size) #pylightcurve-torch has a different syntax, and requires PyTorch Tensors instead of Nympy arrays
         #return np.asnumpy(np.from_dlpack(model)) # must convert back from PyTorch GPU Tensors to Numpy arrays for CPU
-        model = pytransit(np.asnumpy(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)),
-                      np.asnumpy(values['rprs']), np.asnumpy(values['per']), np.asnumpy(values['ars']),
-                      np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
-                      np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
-        return np.array(model, dtype=np.float64) # must convert back from Numpy array to cupy array for GPU
-    except AttributeError:
+        #model = pytransit(np.asnumpy(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)),
+        #              np.asnumpy(values['rprs']), np.asnumpy(values['per']), np.asnumpy(values['ars']),
+        #              np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
+        #              np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
+        #return np.array(model, dtype=np.float64) # must convert back from Numpy array to cupy array for GPU
+    #except AttributeError:
     #except TypeError:
     #except NameError:
-        model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
+    model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
                       values['tmid'], times, method='claret', precision=3)
-        return model
+    return model
 
 @jit(nopython=True)
 def get_phase(times, per, tmid):
