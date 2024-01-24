@@ -927,8 +927,8 @@ class glc_fitter(lc_fitter):
         # for each light curve
         for i in range(nobs): 
             self.lc_data[i]['time'] = np.array(self.lc_data[i]['time'], dtype=np.float64)
-            self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
-            #for k in self.lc_data[i]['priors'].keys():
+            for k in self.lc_data[i]['priors'].keys():
+                self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
             #    try:
             #        self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
             #    except AttributeError:
