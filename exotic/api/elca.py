@@ -1318,26 +1318,26 @@ class glc_fitter(lc_fitter):
                 for j, key in enumerate(gfreekeys):
                     #print((j,key))
                     try:
-                        self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
-                        #dlpack = pars[j].toDlpack()
+                        dlpack = pars[j].toDlpack()
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
-                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        #del dlpack
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        del dlpack
                     except AttributeError:
-                        self.lc_data[i]['priors'][key] = pars[j]
+                        #self.lc_data[i]['priors'][key] = pars[j]
+                        self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
 
                 # local keys
                 ti = sum([len(self.local_bounds[k]) for k in range(i)])
                 for j, key in enumerate(lfreekeys[i]):
                     #print((j,key))
                     try:
-                        self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
-                        #dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
-                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        #del dlpack
+                        dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        del dlpack
                     except AttributeError:
-                        self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
+                        #self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
+                        self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
 
                 # compute model
                 #print(self.lc_data[i]['time'])
