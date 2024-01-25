@@ -64,7 +64,8 @@ try:
     from ultranest import ReactiveNestedSampler
     #import ultranest.stepsampler
     if 'jax' in globals():
-        import ultranest.popstepsampler
+        #import ultranest.popstepsampler
+        import ultranest.stepsampler
     else:
         import ultranest.stepsampler
 except ImportError:
