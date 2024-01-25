@@ -416,20 +416,15 @@ def gauss_numerical_integration(f, x1, x2, precision, *f_args):
     return x1 * np.sum(gauss_table[precision][0][:, None] *
                        f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
 
-@jit(nopython=True)
 def num_claret(r, limb_darkening_coefficients, rprs, z):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
     rsq = r * r
     mu44 = 1.0 - rsq
-    #mu24 = np.sqrt(mu44)
-    #mu14 = np.sqrt(mu24)
-    #return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
-    #    * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
-    mu24 = math.sqrt(mu44)
-    mu14 = math.sqrt(mu24)
+    mu24 = np.sqrt(mu44)
+    mu14 = np.sqrt(mu24)
     return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
-        * r * math.acos(min((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
+        * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
