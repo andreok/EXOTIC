@@ -473,27 +473,18 @@ def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, p
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
-@jit(nopython=True)
 def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
         return z
-    #rr1 = z * np.cos(ww1) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
-    #rr1 = np.clip(rr1, 0, 1)
-    #rr2 = z * np.cos(ww2) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
-    #rr2 = np.clip(rr2, 0, 1)
-    #w1 = np.minimum(ww1, ww2)
-    #r1 = np.minimum(rr1, rr2)
-    #w2 = np.maximum(ww1, ww2)
-    #r2 = np.maximum(rr1, rr2)
-    rr1 = z * math.cos(ww1) - math.sqrt(max(rprs ** 2 - (z * math.sin(ww1)) ** 2, 0))
-    rr1 = 0 if rr1<=0 else (1 if rr1>=1 else rr1)
-    rr2 = z * math.cos(ww2) - math.sqrt(max(rprs ** 2 - (z * math.sin(ww2)) ** 2, 0))
-    rr2 = 0 if rr2<=0 else (1 if rr2>=1 else rr2)
-    w1 = min(ww1, ww2)
-    r1 = min(rr1, rr2)
-    w2 = max(ww1, ww2)
-    r2 = max(rr1, rr2)
+    rr1 = z * np.cos(ww1) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
+    rr1 = np.clip(rr1, 0, 1)
+    rr2 = z * np.cos(ww2) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
+    rr2 = np.clip(rr2, 0, 1)
+    w1 = np.minimum(ww1, ww2)
+    r1 = np.minimum(rr1, rr2)
+    w2 = np.maximum(ww1, ww2)
+    r2 = np.maximum(rr1, rr2)
     parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
     partb = integral_r[method](limb_darkening_coefficients, r1) * (-w1)
     partc = integral_r[method](limb_darkening_coefficients, r2) * w2
