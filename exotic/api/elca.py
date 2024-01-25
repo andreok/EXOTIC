@@ -49,9 +49,9 @@ try:
         del globals()['np']
     import cupy as np
     import torch
-    import jax
-    import jax.numpy as jnp
-    from jax.config import config; config.update('jax_enable_x64', True)
+    #import jax
+    #import jax.numpy as jnp
+    #from jax.config import config; config.update('jax_enable_x64', True)
     #from pylightcurve.models.exoplanet_lc import transit as pytransit
     #from pylightcurve_torch.functional import transit as pytransit
 except ImportError:
@@ -64,8 +64,7 @@ try:
     from ultranest import ReactiveNestedSampler
     #import ultranest.stepsampler
     if 'jax' in globals():
-        #import ultranest.popstepsampler
-        import ultranest.stepsampler
+        import ultranest.popstepsampler
     else:
         import ultranest.stepsampler
 except ImportError:
