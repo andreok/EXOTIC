@@ -1323,8 +1323,8 @@ class glc_fitter(lc_fitter):
                         self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
                         del dlpack
                     except AttributeError:
-                        #self.lc_data[i]['priors'][key] = pars[j]
-                        self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
+                        self.lc_data[i]['priors'][key] = pars[j]
+                        #self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
 
                 # local keys
                 ti = sum([len(self.local_bounds[k]) for k in range(i)])
@@ -1336,8 +1336,8 @@ class glc_fitter(lc_fitter):
                         self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
                         del dlpack
                     except AttributeError:
-                        #self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
-                        self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
+                        self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
+                        #self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
 
                 # compute model
                 #print(self.lc_data[i]['time'])
