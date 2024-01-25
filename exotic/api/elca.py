@@ -44,6 +44,7 @@ import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
 from numba import jit
+import math
 try:
     import cupy as cp
     #if 'np' in globals():
@@ -146,12 +147,15 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 
     return [x, y, z]
 
+@jit(nopython=True)
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
     mu44 = 1.0 - r * r
-    mu24 = np.sqrt(mu44)
-    mu14 = np.sqrt(mu24)
+    #mu24 = np.sqrt(mu44)
+    #mu14 = np.sqrt(mu24)
+    mu24 = math.sqrt(mu44)
+    mu14 = math.sqrt(mu24)
     return - (2.0 * (1.0 - a1 - a2 - a3 - a4) / 4) * mu44 \
            - (2.0 * a1 / 5) * mu44 * mu14 \
            - (2.0 * a2 / 6) * mu44 * mu24 \
@@ -415,15 +419,20 @@ def gauss_numerical_integration(f, x1, x2, precision, *f_args):
     return x1 * np.sum(gauss_table[precision][0][:, None] *
                        f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
 
+@jit(nopython=True)
 def num_claret(r, limb_darkening_coefficients, rprs, z):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
     rsq = r * r
     mu44 = 1.0 - rsq
-    mu24 = np.sqrt(mu44)
-    mu14 = np.sqrt(mu24)
+    #mu24 = np.sqrt(mu44)
+    #mu14 = np.sqrt(mu24)
+    #return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
+    #    * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
+    mu24 = math.sqrt(mu44)
+    mu14 = math.sqrt(mu24)
     return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
-        * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
+        * r * math.acos(min((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
@@ -438,41 +447,62 @@ integral_r_f = {
     #'zero': integral_r_f_zero,
 }
 
+@jit(nopython=True)
 def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    #return (integral_r[method](limb_darkening_coefficients, rprs)
+    #        - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
     return (integral_r[method](limb_darkening_coefficients, rprs)
-            - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
+            - integral_r[method](limb_darkening_coefficients, 0.0)) * abs(ww2 - ww1)
 
+@jit(nopython=True)
 def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
         return z
-    rr1 = z * np.cos(ww1) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
-    rr1 = np.clip(rr1, 0, 1)
-    rr2 = z * np.cos(ww2) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
-    rr2 = np.clip(rr2, 0, 1)
-    w1 = np.minimum(ww1, ww2)
-    r1 = np.minimum(rr1, rr2)
-    w2 = np.maximum(ww1, ww2)
-    r2 = np.maximum(rr1, rr2)
+    #rr1 = z * np.cos(ww1) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
+    #rr1 = np.clip(rr1, 0, 1)
+    #rr2 = z * np.cos(ww2) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
+    #rr2 = np.clip(rr2, 0, 1)
+    #w1 = np.minimum(ww1, ww2)
+    #r1 = np.minimum(rr1, rr2)
+    #w2 = np.maximum(ww1, ww2)
+    #r2 = np.maximum(rr1, rr2)
+    rr1 = z * math.cos(ww1) + math.sqrt(max(rprs ** 2 - (z * math.sin(ww1)) ** 2, 0))
+    rr1 = 0 if rr1<=0 else (1 if rr1>=1 else rr1)
+    rr2 = z * math.cos(ww2) + math.sqrt(max(rprs ** 2 - (z * math.sin(ww2)) ** 2, 0))
+    rr2 = 0 if rr2<=0 else (1 if rr2>=1 else rr2)
+    w1 = min(ww1, ww2)
+    r1 = min(rr1, rr2)
+    w2 = min(ww1, ww2)
+    r2 = min(rr1, rr2)
     parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
     partb = integral_r[method](limb_darkening_coefficients, r1) * w2
     partc = integral_r[method](limb_darkening_coefficients, r2) * (-w1)
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
+@jit(nopython=True)
 def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
         return z
-    rr1 = z * np.cos(ww1) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
-    rr1 = np.clip(rr1, 0, 1)
-    rr2 = z * np.cos(ww2) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
-    rr2 = np.clip(rr2, 0, 1)
-    w1 = np.minimum(ww1, ww2)
-    r1 = np.minimum(rr1, rr2)
-    w2 = np.maximum(ww1, ww2)
-    r2 = np.maximum(rr1, rr2)
+    #rr1 = z * np.cos(ww1) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
+    #rr1 = np.clip(rr1, 0, 1)
+    #rr2 = z * np.cos(ww2) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
+    #rr2 = np.clip(rr2, 0, 1)
+    #w1 = np.minimum(ww1, ww2)
+    #r1 = np.minimum(rr1, rr2)
+    #w2 = np.maximum(ww1, ww2)
+    #r2 = np.maximum(rr1, rr2)
+    rr1 = z * math.cos(ww1) - math.sqrt(max(rprs ** 2 - (z * math.sin(ww1)) ** 2, 0))
+    rr1 = 0 if rr1<=0 else (1 if rr1>=1 else rr1)
+    rr2 = z * math.cos(ww2) - math.sqrt(max(rprs ** 2 - (z * math.sin(ww2)) ** 2, 0))
+    rr2 = 0 if rr2<=0 else (1 if rr2>=1 else rr2)
+    w1 = min(ww1, ww2)
+    r1 = min(rr1, rr2)
+    w2 = max(ww1, ww2)
+    r2 = max(rr1, rr2)
     parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
     partb = integral_r[method](limb_darkening_coefficients, r1) * (-w1)
     partc = integral_r[method](limb_darkening_coefficients, r2) * w2
