@@ -441,7 +441,6 @@ integral_r_f = {
     #'zero': integral_r_f_zero,
 }
 
-@jit(nopython=True)
 def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return (integral_r[method](limb_darkening_coefficients, rprs)
