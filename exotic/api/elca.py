@@ -45,13 +45,14 @@ from itertools import cycle
 import matplotlib.pyplot as plt
 from numba import jit
 try:
-    if 'np' in globals():
-        del globals()['np']
-    import cupy as np
+    import cupy as cp
+    #if 'np' in globals():
+    #    del globals()['np']
+    #import cupy as np
     import torch
-    #import jax
-    #import jax.numpy as jnp
-    #from jax.config import config; config.update('jax_enable_x64', True)
+    import jax
+    import jax.numpy as jnp
+    from jax.config import config; config.update('jax_enable_x64', True)
     #from pylightcurve.models.exoplanet_lc import transit as pytransit
     #from pylightcurve_torch.functional import transit as pytransit
 except ImportError:
@@ -1320,7 +1321,8 @@ class glc_fitter(lc_fitter):
                     try:
                         dlpack = pars[j].toDlpack()
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        self.lc_data[i]['priors'][key] = cp.from_dlpack(dlpack).item()
                         del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j]
@@ -1333,7 +1335,8 @@ class glc_fitter(lc_fitter):
                     try:
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
                         dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        self.lc_data[i]['priors'][key] = cp.from_dlpack(dlpack).item()
                         del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
@@ -1381,11 +1384,11 @@ class glc_fitter(lc_fitter):
         for i in range(nobs): 
             self.lc_data[i]['time'] = np.array(self.lc_data[i]['time'], dtype=np.float64)
             for k in self.lc_data[i]['priors'].keys():
-                self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
-            #    try:
-            #        self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
-            #    except AttributeError:
-            #        pass
+            #    self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
+                try:
+                    self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
+                except AttributeError:
+                    pass
 
         noop = lambda *args, **kwargs: None
         if self.verbose:
