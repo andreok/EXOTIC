@@ -1318,10 +1318,11 @@ class glc_fitter(lc_fitter):
                 for j, key in enumerate(gfreekeys):
                     #print((j,key))
                     try:
-                        dlpack = pars[j].toDlpack()
+                        self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
+                        #dlpack = pars[j].toDlpack()
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        del dlpack
+                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        #del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j]
 
@@ -1330,10 +1331,11 @@ class glc_fitter(lc_fitter):
                 for j, key in enumerate(lfreekeys[i]):
                     #print((j,key))
                     try:
+                        self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
-                        dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        del dlpack
+                        #dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
+                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        #del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
@@ -1379,11 +1381,11 @@ class glc_fitter(lc_fitter):
         for i in range(nobs): 
             self.lc_data[i]['time'] = np.array(self.lc_data[i]['time'], dtype=np.float64)
             for k in self.lc_data[i]['priors'].keys():
-            #    self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
-                try:
-                    self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
-                except AttributeError:
-                    pass
+                self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
+            #    try:
+            #        self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
+            #    except AttributeError:
+            #        pass
 
         noop = lambda *args, **kwargs: None
         if self.verbose:
