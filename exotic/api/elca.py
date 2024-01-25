@@ -1379,11 +1379,11 @@ class glc_fitter(lc_fitter):
         for i in range(nobs): 
             self.lc_data[i]['time'] = np.array(self.lc_data[i]['time'], dtype=np.float64)
             for k in self.lc_data[i]['priors'].keys():
-                self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
-            #    try:
-            #        self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
-            #    except AttributeError:
-            #        pass
+            #    self.lc_data[i]['priors'][k] = np.array(self.lc_data[i]['priors'][k], dtype=np.float64)
+                try:
+                    self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
+                except AttributeError:
+                    pass
 
         noop = lambda *args, **kwargs: None
         if self.verbose:
