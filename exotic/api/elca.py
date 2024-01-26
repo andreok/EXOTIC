@@ -45,6 +45,7 @@ from itertools import cycle
 import matplotlib.pyplot as plt
 from numba import jit, njit
 try:
+    import numpy as np
     #if 'np' in globals():
     #    del globals()['np']
     #import cupy as np
