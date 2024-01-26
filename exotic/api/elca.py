@@ -46,7 +46,6 @@ import matplotlib.pyplot as plt
 from numba import jit, njit
 import math
 try:
-    import cupy as cp
     #if 'np' in globals():
     #    del globals()['np']
     #import cupy as np
@@ -1325,7 +1324,7 @@ class glc_fitter(lc_fitter):
                         dlpack = pars[j].toDlpack()
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
                         #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        self.lc_data[i]['priors'][key] = cp.from_dlpack(dlpack).item()
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
                         del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j]
@@ -1339,7 +1338,7 @@ class glc_fitter(lc_fitter):
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
                         dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
                         #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        self.lc_data[i]['priors'][key] = cp.from_dlpack(dlpack).item()
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
                         del dlpack
                     except AttributeError:
                         self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
