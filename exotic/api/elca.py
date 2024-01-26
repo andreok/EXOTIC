@@ -81,11 +81,11 @@ except ImportError:
     from .plotting import corner
 
 
-@jit(nopython=True, parallel=True)
+@jit(nopython=True)
 def weightedflux(flux, gw, nearest): # assuming only cupy arrays, if GPU
     return np.sum(flux[nearest] * gw, axis=-1)
 
-@jit(nopython=True, parallel=True)
+@jit(nopython=True)
 def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only cupy arrays, if GPU
     Xm = (X - np.median(X, 0)) * w
     kdtree = spatial.cKDTree(Xm * feature_scale)
