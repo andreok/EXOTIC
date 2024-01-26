@@ -467,7 +467,6 @@ def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, p
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
-@njit(parallel=True)
 def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
