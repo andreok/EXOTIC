@@ -46,6 +46,7 @@ import matplotlib.pyplot as plt
 from numba import jit, njit
 import math
 try:
+    import numpy as np
     #if 'np' in globals():
     #    del globals()['np']
     #import cupy as np
