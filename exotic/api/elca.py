@@ -44,9 +44,7 @@ import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
 from numba import jit, njit
-import math
 try:
-    import numpy as np
     #if 'np' in globals():
     #    del globals()['np']
     #import cupy as np
@@ -58,7 +56,7 @@ try:
     #from pylightcurve_torch.functional import transit as pytransit
 except ImportError:
     import numpy as np
-    from pylightcurve.models.exoplanet_lc import transit as pytransit
+    #from pylightcurve.models.exoplanet_lc import transit as pytransit
 from scipy import spatial
 from scipy.optimize import least_squares
 from scipy.signal import savgol_filter
