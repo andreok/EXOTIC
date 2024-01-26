@@ -487,7 +487,6 @@ def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, 
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc - partd
 
-@njit(parallel=True)
 def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method='claret', precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
