@@ -442,11 +442,13 @@ integral_r_f = {
     #'zero': integral_r_f_zero,
 }
 
+@jit(parallel=True)
 def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
+@jit(parallel=True)
 def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
@@ -465,6 +467,7 @@ def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, p
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
+@jit(parallel=True)
 def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
