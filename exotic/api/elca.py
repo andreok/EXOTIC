@@ -102,6 +102,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
     gw[np.isnan(gw)] = 0.01
     return gw, nearest.astype(int)
 
+@jit(parallel=False, cache=True)
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
@@ -410,6 +411,7 @@ gauss_table = [np.swapaxes(np.array(gauss0, dtype=np.float64), 0, 1), np.swapaxe
                np.swapaxes(np.array(gauss40, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss50, dtype=np.float64), 0, 1),
                np.swapaxes(np.array(gauss60, dtype=np.float64), 0, 1)]
 
+@jit(parallel=False, cache=True)
 def gauss_numerical_integration(f, x1, x2, precision, *f_args):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/analysis/numerical_integration.py
     x1, x2 = (x2 - x1) / 2, (x2 + x1) / 2
@@ -417,6 +419,7 @@ def gauss_numerical_integration(f, x1, x2, precision, *f_args):
     return x1 * np.sum(gauss_table[precision][0][:, None] *
                        f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
 
+@jit(parallel=False, cache=True)
 def num_claret(r, limb_darkening_coefficients, rprs, z):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
@@ -427,6 +430,7 @@ def num_claret(r, limb_darkening_coefficients, rprs, z):
     return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
         * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
+@jit(parallel=False, cache=True)
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return gauss_numerical_integration(num_claret, r1, r2, precision, limb_darkening_coefficients, rprs, z)
@@ -440,11 +444,13 @@ integral_r_f = {
     #'zero': integral_r_f_zero,
 }
 
+@jit(parallel=False, cache=True)
 def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
+@jit(parallel=False, cache=True)
 def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
@@ -463,6 +469,7 @@ def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, p
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
+@jit(parallel=False, cache=True)
 def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
@@ -481,6 +488,7 @@ def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, 
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc - partd
 
+@jit(parallel=False, cache=True)
 def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method='claret', precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
@@ -542,6 +550,7 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method
 
     return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
 
+@jit(parallel=False, cache=True)
 def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
             mid_time, time_array, method='claret', precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
@@ -555,6 +564,7 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
     return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              method=method, precision=precision)
 
+@jit(parallel=False, cache=True)
 def transit(times, values): # assuming only cupy arrays, if GPU
     #try:
         #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)))
