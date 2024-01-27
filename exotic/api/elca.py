@@ -562,6 +562,7 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
     return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              method=method, precision=precision)
 
+@jit(parallel=True)
 def transit(times, values): # assuming only cupy arrays, if GPU
     #try:
         #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)))
