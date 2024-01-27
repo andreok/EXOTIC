@@ -43,7 +43,7 @@ from astropy.time import Time
 import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
-from numba import jit, njit
+from numba import jit, njit, prange
 try:
     import numpy as np
     #if 'np' in globals():
@@ -90,7 +90,8 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
     kdtree = spatial.cKDTree(Xm * feature_scale)
     nearest = np.zeros((X.shape[0], neighbors))
     gw = np.zeros((X.shape[0], neighbors), dtype=float)
-    for point in range(X.shape[0]):
+    #for point in range(X.shape[0]):
+    for point in prange(X.shape[0]):
         ind = kdtree.query(kdtree.data[point], neighbors + 1)[1][1:]
         dX = Xm[ind] - Xm[point]
         Xstd = np.std(dX, 0)
@@ -101,6 +102,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
     gw[np.isnan(gw)] = 0.01
     return gw, nearest.astype(int)
 
+@jit(nopython=True, parallel=True, cache=True)
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     inclination = inclination * np.pi / 180.0
@@ -124,7 +126,8 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     u0 = m
     stop = False
     u1 = 0
-    for ii in range(10000):  # setting a limit of 1k iterations - arbitrary limit
+    #for ii in range(10000):  # setting a limit of 1k iterations - arbitrary limit
+    for ii in prange(10000):  # setting a limit of 1k iterations - arbitrary limit
         u1 = u0 - (u0 - eccentricity * np.sin(u0) - m) / (1 - eccentricity * np.cos(u0))
         stop = (np.abs(u1 - u0) < 10 ** (-6)).all()
         if stop:
@@ -409,7 +412,7 @@ gauss_table = [np.swapaxes(np.array(gauss0, dtype=np.float64), 0, 1), np.swapaxe
                np.swapaxes(np.array(gauss40, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss50, dtype=np.float64), 0, 1),
                np.swapaxes(np.array(gauss60, dtype=np.float64), 0, 1)]
 
-@jit(parallel=True)
+@jit(parallel=True, cache=True)
 def gauss_numerical_integration(f, x1, x2, precision, *f_args):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/analysis/numerical_integration.py
     x1, x2 = (x2 - x1) / 2, (x2 + x1) / 2
