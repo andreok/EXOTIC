@@ -49,7 +49,7 @@ try:
     #if 'np' in globals():
     #    del globals()['np']
     #import cupy as np
-    #import torch
+    import torch
     import jax
     import jax.numpy as jnp
     from jax.config import config; config.update('jax_enable_x64', True)
