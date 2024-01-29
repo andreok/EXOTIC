@@ -699,10 +699,10 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
                 limb_darkening_coefficients, 1, 0.0, jnp.pi))
     except NameError:
         plusflux = np.zeros(len(z_over_rs))
-        plusflux.at[plus_case].set(integral_plus_core(
+        plusflux[plus_case] = integral_plus_core(
             #method, 
             limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
-            theta_1[plus_case], theta_2[plus_case], precision=precision))
+            theta_1[plus_case], theta_2[plus_case], precision=precision)
         if len(case0[0]) > 0:
             plusflux[case0] = integral_centred(
                 #method, 
