@@ -725,7 +725,6 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
     return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              method=method, precision=precision)
 
-@jax.jit
 def transit(times, values): # assuming only cupy arrays, if GPU
     #try:
         #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)))
@@ -1479,7 +1478,6 @@ class glc_fitter(lc_fitter):
             jax.device_put(bounddiff)
         except NameError:
             pass
-        @jax.jit
         def prior_transform(upars): # this runs on GPU via JAX arrays
             #try:
             #    #print(jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)))
@@ -1488,7 +1486,6 @@ class glc_fitter(lc_fitter):
             #except NameError:
             return (boundarray[:,0] + bounddiff*upars)
 
-        @jax.jit
         def loglike(pars): # this runs on GPU via JAX arrays, but manipulates only Cupy arrays internally
             chi2 = 0
 
