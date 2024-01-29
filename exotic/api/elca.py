@@ -218,11 +218,11 @@ def integral_r_claret(limb_darkening_coefficients, r):
     a1, a2, a3, a4 = limb_darkening_coefficients
     mu44 = 1.0 - r * r
     try:
-        mu24 = np.sqrt(mu44)
-        mu14 = np.sqrt(mu24)
-    except NameError:
         mu24 = jnp.sqrt(mu44)
         mu14 = jnp.sqrt(mu24)
+    except NameError:
+        mu24 = np.sqrt(mu44)
+        mu14 = np.sqrt(mu24)
     return - (2.0 * (1.0 - a1 - a2 - a3 - a4) / 4) * mu44 \
            - (2.0 * a1 / 5) * mu44 * mu14 \
            - (2.0 * a2 / 6) * mu44 * mu24 \
