@@ -43,7 +43,7 @@ from astropy.time import Time
 import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
-from numba import jit, njit, prange, errors
+from numba import jit, njit, prange
 try:
     import numpy as np
     #if 'np' in globals():
@@ -497,7 +497,7 @@ def gauss_numerical_integration(
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
                        num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
 
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def num_claret(r, limb_darkening_coefficients, rprs, z):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
@@ -541,9 +541,6 @@ def integral_centred(
         return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * jnp.abs(ww2 - ww1)
     except NameError:
-        return (integral_r[method](limb_darkening_coefficients, rprs)
-            - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
-    except errors.TypingError:
         return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
