@@ -656,6 +656,8 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         theta_1 = jnp.zeros(len(z_over_rs))
         jax.device_put(theta_1)
         ph_case = jnp.concatenate((case5[0], casea[0], casec[0]))
+        print(theta_1)
+        print(jnp.where(ph_case)[0])
         print(ph[ph_case])
         theta_1.at(jnp.where(ph_case)[0]).set(ph[ph_case])
         theta_2 = jnp.arcsin(jnp.minimum(rp_over_rs / z_over_rs, 1))
