@@ -43,7 +43,7 @@ from astropy.time import Time
 import copy
 from itertools import cycle
 import matplotlib.pyplot as plt
-from numba import jit, njit, prange
+from numba import jit, njit, prange, errors
 try:
     import numpy as np
     #if 'np' in globals():
@@ -541,6 +541,9 @@ def integral_centred(
         return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * jnp.abs(ww2 - ww1)
     except NameError:
+        return (integral_r[method](limb_darkening_coefficients, rprs)
+            - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
+    except errors.TypingError:
         return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
