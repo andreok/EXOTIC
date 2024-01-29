@@ -87,14 +87,14 @@ def maybe_decorate(decorator_false):
     except NameError:
         return decorator_false
 
-#@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
+@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
 def weightedflux(flux, gw, nearest): # assuming only cupy arrays, if GPU
     try:
         return jnp.sum(flux[nearest] * gw, axis=-1)
     except NameError:
         return np.sum(flux[nearest] * gw, axis=-1)
 
-#@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
+@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
 def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only cupy arrays, if GPU
     try:
         Xm = (X - jnp.median(X, 0)) * w
@@ -214,7 +214,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 
     return [x, y, z]
 
-#@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
+#@maybe_decorate(jit(parallel=True, cache=True))
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
