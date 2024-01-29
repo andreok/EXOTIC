@@ -734,8 +734,8 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     try:
         starflux = jnp.zeros(len(z_over_rs))
         starflux.at[star_case].set(integral_centred(
-        #method, 
-        limb_darkening_coefficients, 1, 0.0, ph[star_case]))
+            #method, 
+            limb_darkening_coefficients, 1, 0.0, ph[star_case]))
     except NameError:
         starflux = np.zeros(len(z_over_rs))
         starflux[star_case] = integral_centred(
