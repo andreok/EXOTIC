@@ -479,7 +479,7 @@ gauss_table = [np.swapaxes(np.array(gauss0, dtype=np.float64), 0, 1), np.swapaxe
                np.swapaxes(np.array(gauss40, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss50, dtype=np.float64), 0, 1),
                np.swapaxes(np.array(gauss60, dtype=np.float64), 0, 1)]
 
-@jax.jit
+#@jax.jit
 def gauss_numerical_integration(
     #f, 
     x1, x2, precision, *f_args):
