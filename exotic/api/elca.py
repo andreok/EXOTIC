@@ -662,6 +662,7 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         theta_2.at[case2].set(jnp.pi / 2.0)
         theta_2.at[casea].set(jnp.pi)
         theta_2.at[casec].set(jnp.pi / 2.0)
+        theta_2.at[case7].set(ph[case7])
     except NameError:
         ph = np.arccos(np.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
         theta_1 = np.zeros(len(z_over_rs))
@@ -672,28 +673,30 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         theta_2[case2] = np.pi / 2.0
         theta_2[casea] = np.pi
         theta_2[casec] = np.pi / 2.0
-    theta_2[case7] = ph[case7]
+        theta_2[case7] = ph[case7]
 
     # flux_upper
-    plusflux = np.zeros(len(z_over_rs))
     try:
+        plusflux = jnp.zeros(len(z_over_rs))
         jax.device_put(plusflux)
-    except NameError:
-        pass
-    plusflux[plus_case] = integral_plus_core(
-        #method, 
-        limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
-        theta_1[plus_case], theta_2[plus_case], precision=precision)
-    try:
+        plusflux.at[plus_case].set(integral_plus_core(
+            #method, 
+            limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
+            theta_1[plus_case], theta_2[plus_case], precision=precision))
         if len(case0[0]) > 0:
-            plusflux[case0] = integral_centred(
+            plusflux.at[case0].set(integral_centred(
                 #method, 
-                limb_darkening_coefficients, rp_over_rs, 0.0, jnp.pi)
+                limb_darkening_coefficients, rp_over_rs, 0.0, jnp.pi))
         if len(caseb[0]) > 0:
-            plusflux[caseb] = integral_centred(
+            plusflux.at[caseb].set(integral_centred(
                 #method, 
-                limb_darkening_coefficients, 1, 0.0, jnp.pi)
+                limb_darkening_coefficients, 1, 0.0, jnp.pi))
     except NameError:
+        plusflux = np.zeros(len(z_over_rs))
+        plusflux.at[plus_case].set(integral_plus_core(
+            #method, 
+            limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
+            theta_1[plus_case], theta_2[plus_case], precision=precision))
         if len(case0[0]) > 0:
             plusflux[case0] = integral_centred(
                 #method, 
@@ -705,35 +708,42 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
 
     # flux_lower
         
-    minsflux = np.zeros(len(z_over_rs))
     try:
+        minsflux = jnp.zeros(len(z_over_rs))
         jax.device_put(minsflux)
+        minsflux.at[minus_case].set(integral_minus_core(
+            #method, 
+            limb_darkening_coefficients, rp_over_rs,
+            z_over_rs[minus_case], 0.0, theta_2[minus_case], precision=precision))
     except NameError:
-        pass
-    minsflux[minus_case] = integral_minus_core(
-        #method, 
-        limb_darkening_coefficients, rp_over_rs,
-        z_over_rs[minus_case], 0.0, theta_2[minus_case], precision=precision)
+        minsflux = np.zeros(len(z_over_rs))
+        minsflux[minus_case] = integral_minus_core(
+            #method, 
+            limb_darkening_coefficients, rp_over_rs,
+            z_over_rs[minus_case], 0.0, theta_2[minus_case], precision=precision)
 
     # flux_star
-    starflux = np.zeros(len(z_over_rs))
     try:
+        starflux = jnp.zeros(len(z_over_rs))
         jax.device_put(starflux)
-    except NameError:
-        pass
-    starflux[star_case] = integral_centred(
+        starflux.at[star_case].set(integral_centred(
         #method, 
-        limb_darkening_coefficients, 1, 0.0, ph[star_case])
+        limb_darkening_coefficients, 1, 0.0, ph[star_case]))
+    except NameError:
+        starflux = np.zeros(len(z_over_rs))
+        starflux[star_case] = integral_centred(
+            #method, 
+            limb_darkening_coefficients, 1, 0.0, ph[star_case])
 
     # flux_total
     try:
         total_flux = integral_centred(
             #method, 
-            limb_darkening_coefficients, 1, 0.0, 2.0 * np.pi)
+            limb_darkening_coefficients, 1, 0.0, 2.0 * jnp.pi)
     except NameError:
         total_flux = integral_centred(
             #method, 
-            limb_darkening_coefficients, 1, 0.0, 2.0 * jnp.pi)
+            limb_darkening_coefficients, 1, 0.0, 2.0 * np.pi)
 
     return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
 
