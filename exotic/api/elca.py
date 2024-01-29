@@ -654,7 +654,6 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     try:
         ph = jnp.arccos(jnp.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
         theta_1 = jnp.zeros(len(z_over_rs))
-        jax.device_put(theta_1)
         ph_case = jnp.concatenate((case5[0], casea[0], casec[0]))
         theta_1.at[ph_case].set(ph[ph_case])
         theta_2 = jnp.arcsin(jnp.minimum(rp_over_rs / z_over_rs, 1))
@@ -678,7 +677,6 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     # flux_upper
     try:
         plusflux = jnp.zeros(len(z_over_rs))
-        jax.device_put(plusflux)
         plusflux.at[plus_case].set(integral_plus_core(
             #method, 
             limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
@@ -710,7 +708,6 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         
     try:
         minsflux = jnp.zeros(len(z_over_rs))
-        jax.device_put(minsflux)
         minsflux.at[minus_case].set(integral_minus_core(
             #method, 
             limb_darkening_coefficients, rp_over_rs,
@@ -725,7 +722,6 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     # flux_star
     try:
         starflux = jnp.zeros(len(z_over_rs))
-        jax.device_put(starflux)
         starflux.at[star_case].set(integral_centred(
         #method, 
         limb_darkening_coefficients, 1, 0.0, ph[star_case]))
