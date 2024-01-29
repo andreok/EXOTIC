@@ -487,11 +487,6 @@ def gauss_numerical_integration(
     x1, x2 = (x2 - x1) / 2, (x2 + x1) / 2
 
     try:
-        print(gauss_table[precision][0][:, None])
-        print(x1[None, :])
-        print(gauss_table[precision][1][:, None])
-        print(x2[None, :])
-        print(num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args))
         return x1 * jnp.sum(gauss_table[precision][0][:, None] *
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
                        num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
@@ -517,7 +512,7 @@ def num_claret(r, limb_darkening_coefficients, rprs, z):
         return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
             * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
-@jax.jit
+#@jax.jit
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return gauss_numerical_integration(
@@ -533,7 +528,7 @@ integral_r_f = {
     #'zero': integral_r_f_zero,
 }
 
-@jax.jit
+#@jax.jit
 def integral_centred(
     #method, 
     limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
@@ -547,7 +542,7 @@ def integral_centred(
         return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
-@jax.jit
+#@jax.jit
 def integral_plus_core(
     #method, 
     limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
@@ -580,7 +575,7 @@ def integral_plus_core(
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
-@jax.jit
+#@jax.jit
 def integral_minus_core(
     #method, 
     limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
