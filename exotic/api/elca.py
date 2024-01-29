@@ -49,9 +49,10 @@ try:
     #if 'np' in globals():
     #    del globals()['np']
     #import cupy as np
-    import torch
+    #import torch
     import jax
     import jax.numpy as jnp
+    import jax.scipy
     from jax.config import config; config.update('jax_enable_x64', True)
     #from pylightcurve.models.exoplanet_lc import transit as pytransit
     #from pylightcurve_torch.functional import transit as pytransit
@@ -80,80 +81,148 @@ except ImportError:
     from .plotting import corner
 
 
-@jit(nopython=True, parallel=True, cache=True)
+#@jit(nopython=True, parallel=True, cache=True)
+@jax.jit
 def weightedflux(flux, gw, nearest): # assuming only cupy arrays, if GPU
-    return np.sum(flux[nearest] * gw, axis=-1)
+    try:
+        return jnp.sum(flux[nearest] * gw, axis=-1)
+    except NameError:
+        return np.sum(flux[nearest] * gw, axis=-1)
 
-@jit(nopython=True, parallel=True, cache=True)
+#@jit(nopython=True, parallel=True, cache=True)
+@jax.jit
 def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only cupy arrays, if GPU
-    Xm = (X - np.median(X, 0)) * w
-    kdtree = spatial.cKDTree(Xm * feature_scale)
-    nearest = np.zeros((X.shape[0], neighbors))
-    gw = np.zeros((X.shape[0], neighbors), dtype=float)
-    #for point in range(X.shape[0]):
-    for point in prange(X.shape[0]):
-        ind = kdtree.query(kdtree.data[point], neighbors + 1)[1][1:]
-        dX = Xm[ind] - Xm[point]
-        Xstd = np.std(dX, 0)
-        gX = np.exp(-dX ** 2 / (2 * Xstd ** 2))
-        gwX = np.product(gX, 1)
-        gw[point, :] = gwX / gwX.sum()
-        nearest[point, :] = ind
-    gw[np.isnan(gw)] = 0.01
+    try:
+        Xm = (X - jnp.median(X, 0)) * w
+        kdtree = jax.scipy.spatial.cKDTree(Xm * feature_scale)
+        nearest = jnp.zeros((X.shape[0], neighbors))
+        gw = jnp.zeros((X.shape[0], neighbors), dtype=float)
+        for point in range(X.shape[0]):
+            ind = kdtree.query(kdtree.data[point], neighbors + 1)[1][1:]
+            dX = Xm[ind] - Xm[point]
+            Xstd = jnp.std(dX, 0)
+            gX = jnp.exp(-dX ** 2 / (2 * Xstd ** 2))
+            gwX = jnp.product(gX, 1)
+            gw[point, :] = gwX / gwX.sum()
+            nearest[point, :] = ind
+        gw[jnp.isnan(gw)] = 0.01
+    except NameError:
+        Xm = (X - np.median(X, 0)) * w
+        kdtree = spatial.cKDTree(Xm * feature_scale)
+        nearest = np.zeros((X.shape[0], neighbors))
+        gw = np.zeros((X.shape[0], neighbors), dtype=float)
+        for point in range(X.shape[0]):
+            ind = kdtree.query(kdtree.data[point], neighbors + 1)[1][1:]
+            dX = Xm[ind] - Xm[point]
+            Xstd = np.std(dX, 0)
+            gX = np.exp(-dX ** 2 / (2 * Xstd ** 2))
+            gwX = np.product(gX, 1)
+            gw[point, :] = gwX / gwX.sum()
+            nearest[point, :] = ind
+        gw[np.isnan(gw)] = 0.01
     return gw, nearest.astype(int)
 
+@jax.jit
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
-    inclination = inclination * np.pi / 180.0
-    periastron = periastron * np.pi / 180.0
-    ww = ww * np.pi / 180.0
 
-    if eccentricity == 0 and ww == 0:
-        vv = 2 * np.pi * (time_array - mid_time) / period
-        bb = sma_over_rs * np.cos(vv)
-        return [bb * np.sin(inclination), sma_over_rs * np.sin(vv), - bb * np.cos(inclination)]
+    try:
+        inclination = inclination * jnp.pi / 180.0
+        periastron = periastron * jnp.pi / 180.0
+        ww = ww * jnp.pi / 180.0
 
-    if periastron < np.pi / 2:
-        aa = 1.0 * np.pi / 2 - periastron
-    else:
-        aa = 5.0 * np.pi / 2 - periastron
-    bb = 2 * np.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * np.tan(aa / 2))
-    if bb < 0:
-        bb += 2 * np.pi
-    mid_time = float(mid_time) - (period / 2.0 / np.pi) * (bb - eccentricity * np.sin(bb))
-    m = (time_array - mid_time - np.int_((time_array - mid_time) / period) * period) * 2.0 * np.pi / period
-    u0 = m
-    stop = False
-    u1 = 0
-    for ii in range(10000):  # setting a limit of 1k iterations - arbitrary limit
-        u1 = u0 - (u0 - eccentricity * np.sin(u0) - m) / (1 - eccentricity * np.cos(u0))
-        stop = (np.abs(u1 - u0) < 10 ** (-6)).all()
-        if stop:
-            break
+        if eccentricity == 0 and ww == 0:
+            vv = 2 * jnp.pi * (time_array - mid_time) / period
+            bb = sma_over_rs * jnp.cos(vv)
+            return [bb * jnp.sin(inclination), sma_over_rs * jnp.sin(vv), - bb * jnp.cos(inclination)]
+
+        if periastron < jnp.pi / 2:
+            aa = 1.0 * jnp.pi / 2 - periastron
         else:
-            u0 = u1
-    if not stop:
-        raise RuntimeError('Failed to find a solution in 10000 loops')
+            aa = 5.0 * jnp.pi / 2 - periastron
+        bb = 2 * jnp.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2))
+        if bb < 0:
+            bb += 2 * jnp.pi
+        mid_time = float(mid_time) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
+        m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
+        u0 = m
+        stop = False
+        u1 = 0
+        for ii in range(10000):  # setting a limit of 1k iterations - arbitrary limit
+            u1 = u0 - (u0 - eccentricity * jnp.sin(u0) - m) / (1 - eccentricity * jnp.cos(u0))
+            stop = (jnp.abs(u1 - u0) < 10 ** (-6)).all()
+            if stop:
+                break
+            else:
+                u0 = u1
+        if not stop:
+            raise RuntimeError('Failed to find a solution in 10000 loops')
 
-    vv = 2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity)) * np.tan((u1) / 2))
-    rr = sma_over_rs * (1 - (eccentricity ** 2)) / (np.ones_like(vv) + eccentricity * np.cos(vv))
+        vv = 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2))
+        rr = sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv))
 
-    aa = np.cos(vv + periastron)
-    bb = np.sin(vv + periastron)
+        aa = jnp.cos(vv + periastron)
+        bb = jnp.sin(vv + periastron)
 
-    x = rr * bb * np.sin(inclination)
-    y = rr * (-aa * np.cos(ww) + bb * np.sin(ww) * np.cos(inclination))
-    z = rr * (-aa * np.sin(ww) - bb * np.cos(ww) * np.cos(inclination))
+        x = rr * bb * jnp.sin(inclination)
+        y = rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination))
+        z = rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination))
+    except NameError:
+        inclination = inclination * np.pi / 180.0
+        periastron = periastron * np.pi / 180.0
+        ww = ww * np.pi / 180.0
+
+        if eccentricity == 0 and ww == 0:
+            vv = 2 * np.pi * (time_array - mid_time) / period
+            bb = sma_over_rs * np.cos(vv)
+            return [bb * np.sin(inclination), sma_over_rs * np.sin(vv), - bb * np.cos(inclination)]
+
+        if periastron < np.pi / 2:
+            aa = 1.0 * np.pi / 2 - periastron
+        else:
+            aa = 5.0 * np.pi / 2 - periastron
+        bb = 2 * np.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * np.tan(aa / 2))
+        if bb < 0:
+            bb += 2 * np.pi
+        mid_time = float(mid_time) - (period / 2.0 / np.pi) * (bb - eccentricity * np.sin(bb))
+        m = (time_array - mid_time - np.int_((time_array - mid_time) / period) * period) * 2.0 * np.pi / period
+        u0 = m
+        stop = False
+        u1 = 0
+        for ii in range(10000):  # setting a limit of 1k iterations - arbitrary limit
+            u1 = u0 - (u0 - eccentricity * np.sin(u0) - m) / (1 - eccentricity * np.cos(u0))
+            stop = (np.abs(u1 - u0) < 10 ** (-6)).all()
+            if stop:
+                break
+            else:
+                u0 = u1
+        if not stop:
+            raise RuntimeError('Failed to find a solution in 10000 loops')
+
+        vv = 2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity)) * np.tan((u1) / 2))
+        rr = sma_over_rs * (1 - (eccentricity ** 2)) / (np.ones_like(vv) + eccentricity * np.cos(vv))
+
+        aa = np.cos(vv + periastron)
+        bb = np.sin(vv + periastron)
+
+        x = rr * bb * np.sin(inclination)
+        y = rr * (-aa * np.cos(ww) + bb * np.sin(ww) * np.cos(inclination))
+        z = rr * (-aa * np.sin(ww) - bb * np.cos(ww) * np.cos(inclination))
 
     return [x, y, z]
 
-@jit(nopython=True, parallel=True, cache=True)
+#@jit(nopython=True, parallel=True, cache=True)
+@jax.jit
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
     mu44 = 1.0 - r * r
-    mu24 = np.sqrt(mu44)
-    mu14 = np.sqrt(mu24)
+    try:
+        mu24 = np.sqrt(mu44)
+        mu14 = np.sqrt(mu24)
+    except NameError:
+        mu24 = jnp.sqrt(mu44)
+        mu14 = jnp.sqrt(mu24)
     return - (2.0 * (1.0 - a1 - a2 - a3 - a4) / 4) * mu44 \
            - (2.0 * a1 / 5) * mu44 * mu14 \
            - (2.0 * a2 / 6) * mu44 * mu24 \
@@ -410,23 +479,36 @@ gauss_table = [np.swapaxes(np.array(gauss0, dtype=np.float64), 0, 1), np.swapaxe
                np.swapaxes(np.array(gauss40, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss50, dtype=np.float64), 0, 1),
                np.swapaxes(np.array(gauss60, dtype=np.float64), 0, 1)]
 
+@jax.jit
 def gauss_numerical_integration(f, x1, x2, precision, *f_args):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/analysis/numerical_integration.py
     x1, x2 = (x2 - x1) / 2, (x2 + x1) / 2
 
-    return x1 * np.sum(gauss_table[precision][0][:, None] *
+    try:
+        return x1 * jnp.sum(gauss_table[precision][0][:, None] *
+                       f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+    except NameError:
+        return x1 * np.sum(gauss_table[precision][0][:, None] *
                        f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
 
+@jax.jit
 def num_claret(r, limb_darkening_coefficients, rprs, z):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
     rsq = r * r
     mu44 = 1.0 - rsq
-    mu24 = np.sqrt(mu44)
-    mu14 = np.sqrt(mu24)
-    return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
-        * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
+    try:
+        mu24 = jnp.sqrt(mu44)
+        mu14 = jnp.sqrt(mu24)
+        return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
+            * r * jnp.arccos(jnp.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
+    except NameError:
+        mu24 = np.sqrt(mu44)
+        mu14 = np.sqrt(mu24)
+        return ((1.0 - a1 - a2 - a3 - a4) + a1 * mu14 + a2 * mu24 + a3 * mu24 * mu14 + a4 * mu44) \
+            * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
+@jax.jit
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return gauss_numerical_integration(num_claret, r1, r2, precision, limb_darkening_coefficients, rprs, z)
@@ -440,121 +522,210 @@ integral_r_f = {
     #'zero': integral_r_f_zero,
 }
 
+@jax.jit
 def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
-    return (integral_r[method](limb_darkening_coefficients, rprs)
+    try:
+        return (integral_r[method](limb_darkening_coefficients, rprs)
+            - integral_r[method](limb_darkening_coefficients, 0.0)) * jnp.abs(ww2 - ww1)
+    except NameError:
+        return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
+@jax.jit
 def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
         return z
-    rr1 = z * np.cos(ww1) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
-    rr1 = np.clip(rr1, 0, 1)
-    rr2 = z * np.cos(ww2) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
-    rr2 = np.clip(rr2, 0, 1)
-    w1 = np.minimum(ww1, ww2)
-    r1 = np.minimum(rr1, rr2)
-    w2 = np.maximum(ww1, ww2)
-    r2 = np.maximum(rr1, rr2)
+    try:
+        rr1 = z * jnp.cos(ww1) + jnp.sqrt(jnp.maximum(rprs ** 2 - (z * jnp.sin(ww1)) ** 2, 0))
+        rr1 = jnp.clip(rr1, 0, 1)
+        rr2 = z * jnp.cos(ww2) + jnp.sqrt(jnp.maximum(rprs ** 2 - (z * jnp.sin(ww2)) ** 2, 0))
+        rr2 = jnp.clip(rr2, 0, 1)
+        w1 = jnp.minimum(ww1, ww2)
+        r1 = jnp.minimum(rr1, rr2)
+        w2 = jnp.maximum(ww1, ww2)
+        r2 = jnp.maximum(rr1, rr2)
+    except NameError:
+        rr1 = z * np.cos(ww1) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
+        rr1 = np.clip(rr1, 0, 1)
+        rr2 = z * np.cos(ww2) + np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
+        rr2 = np.clip(rr2, 0, 1)
+        w1 = np.minimum(ww1, ww2)
+        r1 = np.minimum(rr1, rr2)
+        w2 = np.maximum(ww1, ww2)
+        r2 = np.maximum(rr1, rr2)
     parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
     partb = integral_r[method](limb_darkening_coefficients, r1) * w2
     partc = integral_r[method](limb_darkening_coefficients, r2) * (-w1)
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
+@jax.jit
 def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     if len(z) == 0:
         return z
-    rr1 = z * np.cos(ww1) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
-    rr1 = np.clip(rr1, 0, 1)
-    rr2 = z * np.cos(ww2) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
-    rr2 = np.clip(rr2, 0, 1)
-    w1 = np.minimum(ww1, ww2)
-    r1 = np.minimum(rr1, rr2)
-    w2 = np.maximum(ww1, ww2)
-    r2 = np.maximum(rr1, rr2)
+    try:
+        rr1 = z * jnp.cos(ww1) - jnp.sqrt(jnp.maximum(rprs ** 2 - (z * jnp.sin(ww1)) ** 2, 0))
+        rr1 = jnp.clip(rr1, 0, 1)
+        rr2 = z * jnp.cos(ww2) - jnp.sqrt(jnp.maximum(rprs ** 2 - (z * jnp.sin(ww2)) ** 2, 0))
+        rr2 = jnp.clip(rr2, 0, 1)
+        w1 = jnp.minimum(ww1, ww2)
+        r1 = jnp.minimum(rr1, rr2)
+        w2 = jnp.maximum(ww1, ww2)
+        r2 = jnp.maximum(rr1, rr2)
+    except NameError:
+        rr1 = z * np.cos(ww1) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww1)) ** 2, 0))
+        rr1 = np.clip(rr1, 0, 1)
+        rr2 = z * np.cos(ww2) - np.sqrt(np.maximum(rprs ** 2 - (z * np.sin(ww2)) ** 2, 0))
+        rr2 = np.clip(rr2, 0, 1)
+        w1 = np.minimum(ww1, ww2)
+        r1 = np.minimum(rr1, rr2)
+        w2 = np.maximum(ww1, ww2)
+        r2 = np.maximum(rr1, rr2)
     parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
     partb = integral_r[method](limb_darkening_coefficients, r1) * (-w1)
     partc = integral_r[method](limb_darkening_coefficients, r2) * w2
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc - partd
 
+@jax.jit
 def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method='claret', precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
-    z_over_rs = np.where(z_over_rs < 0, 1.0 + 100.0 * rp_over_rs, z_over_rs)
-    z_over_rs = np.maximum(z_over_rs, 10**(-10))
+    try:
+        z_over_rs = jnp.where(z_over_rs < 0, 1.0 + 100.0 * rp_over_rs, z_over_rs)
+        z_over_rs = jnp.maximum(z_over_rs, 10**(-10))
+    except NameError:
+        z_over_rs = np.where(z_over_rs < 0, 1.0 + 100.0 * rp_over_rs, z_over_rs)
+        z_over_rs = np.maximum(z_over_rs, 10**(-10))
 
     # cases
     zsq = z_over_rs * z_over_rs
     sum_z_rprs = z_over_rs + rp_over_rs
     dif_z_rprs = rp_over_rs - z_over_rs
     sqr_dif_z_rprs = zsq - rp_over_rs ** 2
-    case0 = np.where((z_over_rs == 0) & (rp_over_rs <= 1))
-    case1 = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs <= 1))
-    casea = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs < 1))
-    caseb = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs > 1))
-    case2 = np.where((z_over_rs == rp_over_rs) & (sum_z_rprs <= 1))
-    casec = np.where((z_over_rs == rp_over_rs) & (sum_z_rprs > 1))
-    case3 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs < 1))
-    case4 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs == 1))
-    case5 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs < 1))
-    case6 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs == 1))
-    case7 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs > 1) & (-1 < dif_z_rprs))
-    plus_case = np.concatenate((case1[0], case2[0], case3[0], case4[0], case5[0], casea[0], casec[0]))
-    minus_case = np.concatenate((case3[0], case4[0], case5[0], case6[0], case7[0]))
-    star_case = np.concatenate((case5[0], case6[0], case7[0], casea[0], casec[0]))
+    try:
+        case0 = jnp.where((z_over_rs == 0) & (rp_over_rs <= 1))
+        case1 = jnp.where((z_over_rs < rp_over_rs) & (sum_z_rprs <= 1))
+        casea = jnp.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs < 1))
+        caseb = jnp.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs > 1))
+        case2 = jnp.where((z_over_rs == rp_over_rs) & (sum_z_rprs <= 1))
+        casec = jnp.where((z_over_rs == rp_over_rs) & (sum_z_rprs > 1))
+        case3 = jnp.where((z_over_rs > rp_over_rs) & (sum_z_rprs < 1))
+        case4 = jnp.where((z_over_rs > rp_over_rs) & (sum_z_rprs == 1))
+        case5 = jnp.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs < 1))
+        case6 = jnp.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs == 1))
+        case7 = jnp.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs > 1) & (-1 < dif_z_rprs))
+        plus_case = jnp.concatenate((case1[0], case2[0], case3[0], case4[0], case5[0], casea[0], casec[0]))
+        minus_case = jnp.concatenate((case3[0], case4[0], case5[0], case6[0], case7[0]))
+        star_case = jnp.concatenate((case5[0], case6[0], case7[0], casea[0], casec[0]))
+    except NameError:
+        case0 = np.where((z_over_rs == 0) & (rp_over_rs <= 1))
+        case1 = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs <= 1))
+        casea = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs < 1))
+        caseb = np.where((z_over_rs < rp_over_rs) & (sum_z_rprs > 1) & (dif_z_rprs > 1))
+        case2 = np.where((z_over_rs == rp_over_rs) & (sum_z_rprs <= 1))
+        casec = np.where((z_over_rs == rp_over_rs) & (sum_z_rprs > 1))
+        case3 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs < 1))
+        case4 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs == 1))
+        case5 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs < 1))
+        case6 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs == 1))
+        case7 = np.where((z_over_rs > rp_over_rs) & (sum_z_rprs > 1) & (sqr_dif_z_rprs > 1) & (-1 < dif_z_rprs))
+        plus_case = np.concatenate((case1[0], case2[0], case3[0], case4[0], case5[0], casea[0], casec[0]))
+        minus_case = np.concatenate((case3[0], case4[0], case5[0], case6[0], case7[0]))
+        star_case = np.concatenate((case5[0], case6[0], case7[0], casea[0], casec[0]))
 
     # cross points
-    ph = np.arccos(np.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
-    theta_1 = np.zeros(len(z_over_rs))
-    ph_case = np.concatenate((case5[0], casea[0], casec[0]))
-    theta_1[ph_case] = ph[ph_case]
-    theta_2 = np.arcsin(np.minimum(rp_over_rs / z_over_rs, 1))
-    theta_2[case1] = np.pi
-    theta_2[case2] = np.pi / 2.0
-    theta_2[casea] = np.pi
-    theta_2[casec] = np.pi / 2.0
+    try:
+        ph = jnp.arccos(jnp.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
+        theta_1 = np.zeros(len(z_over_rs))
+        jax.device_put(theta_1)
+        ph_case = jnp.concatenate((case5[0], casea[0], casec[0]))
+        theta_1[ph_case] = ph[ph_case]
+        theta_2 = jnp.arcsin(np.minimum(rp_over_rs / z_over_rs, 1))
+        theta_2[case1] = jnp.pi
+        theta_2[case2] = jnp.pi / 2.0
+        theta_2[casea] = jnp.pi
+        theta_2[casec] = jnp.pi / 2.0
+    except NameError:
+        ph = np.arccos(np.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
+        theta_1 = np.zeros(len(z_over_rs))
+        ph_case = np.concatenate((case5[0], casea[0], casec[0]))
+        theta_1[ph_case] = ph[ph_case]
+        theta_2 = np.arcsin(np.minimum(rp_over_rs / z_over_rs, 1))
+        theta_2[case1] = np.pi
+        theta_2[case2] = np.pi / 2.0
+        theta_2[casea] = np.pi
+        theta_2[casec] = np.pi / 2.0
     theta_2[case7] = ph[case7]
 
     # flux_upper
     plusflux = np.zeros(len(z_over_rs))
+    try:
+        jax.device_put(plusflux)
+    except NameError:
+        pass
     plusflux[plus_case] = integral_plus_core(method, limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
                                              theta_1[plus_case], theta_2[plus_case], precision=precision)
-    if len(case0[0]) > 0:
-        plusflux[case0] = integral_centred(method, limb_darkening_coefficients, rp_over_rs, 0.0, np.pi)
-    if len(caseb[0]) > 0:
-        plusflux[caseb] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, np.pi)
+    try:
+        if len(case0[0]) > 0:
+            plusflux[case0] = integral_centred(method, limb_darkening_coefficients, rp_over_rs, 0.0, jnp.pi)
+        if len(caseb[0]) > 0:
+            plusflux[caseb] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, jnp.pi)
+    except NameError:
+        if len(case0[0]) > 0:
+            plusflux[case0] = integral_centred(method, limb_darkening_coefficients, rp_over_rs, 0.0, np.pi)
+        if len(caseb[0]) > 0:
+            plusflux[caseb] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, np.pi)
 
     # flux_lower
+        
     minsflux = np.zeros(len(z_over_rs))
+    try:
+        jax.device_put(minsflux)
+    except NameError:
+        pass
     minsflux[minus_case] = integral_minus_core(method, limb_darkening_coefficients, rp_over_rs,
                                                z_over_rs[minus_case], 0.0, theta_2[minus_case], precision=precision)
 
     # flux_star
     starflux = np.zeros(len(z_over_rs))
+    try:
+        jax.device_put(starflux)
+    except NameError:
+        pass
     starflux[star_case] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, ph[star_case])
 
     # flux_total
-    total_flux = integral_centred(method, limb_darkening_coefficients, 1, 0.0, 2.0 * np.pi)
+    try:
+        total_flux = integral_centred(method, limb_darkening_coefficients, 1, 0.0, 2.0 * np.pi)
+    except NameError:
+        total_flux = integral_centred(method, limb_darkening_coefficients, 1, 0.0, 2.0 * jnp.pi)
 
     return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
 
+@jax.jit
 def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
             mid_time, time_array, method='claret', precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
     position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
 
-    projected_distance = np.where(
-        position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
-        np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
+    try:
+        projected_distance = jnp.where(
+            position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
+            jnp.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
+    except NameError:
+        projected_distance = np.where(
+            position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
+            np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
 
     return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              method=method, precision=precision)
 
+@jax.jit
 def transit(times, values): # assuming only cupy arrays, if GPU
     #try:
         #print(torch.from_dlpack(np.array([values['u0'], values['u1'], values['u2'], values['u3']], dtype=np.float64)))
@@ -1303,14 +1474,21 @@ class glc_fitter(lc_fitter):
         except AttributeError:
             bounddiff = np.diff(boundarray,1).reshape(-1)
         print(bounddiff)
+        try:
+            jax.device_put(boundarray)
+            jax.device_put(bounddiff)
+        except NameError:
+            pass
+        @jax.jit
         def prior_transform(upars): # this runs on GPU via JAX arrays
-            try:
-                #print(jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)))
-                #print(jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float64)))
-                return (jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)) + jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float64))*upars)
-            except NameError:
-                return (boundarray[:,0] + bounddiff*upars)
+            #try:
+            #    #print(jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)))
+            #    #print(jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float64)))
+            #    return (jax.dlpack.from_dlpack(np.array(boundarray[:,0], dtype=np.float64)) + jax.dlpack.from_dlpack(np.array(bounddiff, dtype=np.float64))*upars)
+            #except NameError:
+            return (boundarray[:,0] + bounddiff*upars)
 
+        @jax.jit
         def loglike(pars): # this runs on GPU via JAX arrays, but manipulates only Cupy arrays internally
             chi2 = 0
 
@@ -1320,29 +1498,30 @@ class glc_fitter(lc_fitter):
                 # global keys
                 for j, key in enumerate(gfreekeys):
                     #print((j,key))
-                    try:
-                        dlpack = pars[j].toDlpack()
-                        #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
-                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
-                        del dlpack
-                    except AttributeError:
-                        self.lc_data[i]['priors'][key] = pars[j]
-                        #self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
+                    #try:
+                    #    dlpack = pars[j].toDlpack()
+                    #    #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
+                    #    #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                    #    self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
+                    #    del dlpack
+                    #except AttributeError:
+                    #    #self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
+                    self.lc_data[i]['priors'][key] = pars[j]
+                    
 
                 # local keys
                 ti = sum([len(self.local_bounds[k]) for k in range(i)])
                 for j, key in enumerate(lfreekeys[i]):
                     #print((j,key))
-                    try:
-                        #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
-                        dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
-                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
-                        del dlpack
-                    except AttributeError:
-                        self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
-                        #self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
+                    #try:
+                    #    #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
+                    #    dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
+                    #    #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                    #    self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
+                    #    del dlpack
+                    #except AttributeError:
+                    #    #self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
+                    self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
                 # compute model
                 #print(self.lc_data[i]['time'])
@@ -1353,23 +1532,34 @@ class glc_fitter(lc_fitter):
                 #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
                 #except AttributeError:
                 #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
-                model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+                #model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+                try:
+                    model *= jnp.exp(self.lc_data[i]['priors']['a2']*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+                except NameError:
+                    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
                 #print(model)
-                #detrend = self.lc_data[i]['flux']/model
-                detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
+                detrend = self.lc_data[i]['flux']/model
+                #detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
                 #print(detrend)
                 #try:
                 #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
                 #except AttributeError:
                 #    model *= np.mean(detrend)
-                model *= np.mean(detrend)
+                try:
+                    model *= jnp.mean(detrend)
+                except NameError:
+                    model *= np.mean(detrend)
                 #print(model)
 
                 # add to chi2
+                #try:
+                #    #chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+                #    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+                #except AttributeError:
+                #    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
                 try:
-                    #chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                except AttributeError:
+                    chi2 += jnp.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+                except NameError:
                     chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
                 #print(chi2)
 
@@ -1391,6 +1581,11 @@ class glc_fitter(lc_fitter):
                     self.lc_data[i]['priors'][k] = self.lc_data[i]['priors'][k].item()
                 except AttributeError:
                     pass
+        try:
+            jax.device_put(self.lc_data)
+            jax.device_put(gauss_table)
+        except NameError:
+            pass
 
         noop = lambda *args, **kwargs: None
         if self.verbose:
@@ -1409,6 +1604,11 @@ class glc_fitter(lc_fitter):
         else:
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=False, viz_callback=noop)
 
+        try:
+            jax.device_get(self.lc_data)
+            jax.device_get(self.results)
+        except NameError:
+            pass
         # for each light curve
         for i in range(nobs): 
             try:
