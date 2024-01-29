@@ -87,14 +87,14 @@ def maybe_decorate(decorator_false):
     except NameError:
         return decorator_false
 
-@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
+#@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
 def weightedflux(flux, gw, nearest): # assuming only cupy arrays, if GPU
     try:
         return jnp.sum(flux[nearest] * gw, axis=-1)
     except NameError:
         return np.sum(flux[nearest] * gw, axis=-1)
 
-@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
+#@maybe_decorate(jit(nopython=True, parallel=True, cache=True))
 def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only cupy arrays, if GPU
     try:
         Xm = (X - jnp.median(X, 0)) * w
