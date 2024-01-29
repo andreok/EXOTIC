@@ -538,8 +538,8 @@ def integral_centred(
     method='claret'
 
     try:
-        return (integral_r[method](limb_darkening_coefficients, rprs)
-            - integral_r[method](limb_darkening_coefficients, 0.0)) * jnp.abs(ww2 - ww1)
+        return jnp.abs(ww2 - ww1) * (integral_r[method](limb_darkening_coefficients, rprs)
+            - integral_r[method](limb_darkening_coefficients, 0.0))
     except NameError:
         return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
