@@ -523,8 +523,12 @@ integral_r_f = {
 }
 
 @jax.jit
-def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
+def integral_centred(
+    #method, 
+    limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    method='claret'
+
     try:
         return (integral_r[method](limb_darkening_coefficients, rprs)
             - integral_r[method](limb_darkening_coefficients, 0.0)) * jnp.abs(ww2 - ww1)
@@ -533,8 +537,12 @@ def integral_centred(method, limb_darkening_coefficients, rprs, ww1, ww2): # ass
             - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
 @jax.jit
-def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
+def integral_plus_core(
+    #method, 
+    limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    method='claret'
+
     if len(z) == 0:
         return z
     try:
@@ -562,8 +570,12 @@ def integral_plus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, p
     return parta + partb + partc + partd
 
 @jax.jit
-def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
+def integral_minus_core(
+    #method, 
+    limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    method='claret'
+
     if len(z) == 0:
         return z
     try:
@@ -591,7 +603,9 @@ def integral_minus_core(method, limb_darkening_coefficients, rprs, z, ww1, ww2, 
     return parta + partb + partc - partd
 
 @jax.jit
-def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method='claret', precision=3): # assuming only cupy arrays, if GPU
+def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, 
+                      #method='claret', 
+                      precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
     try:
@@ -667,18 +681,28 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method
         jax.device_put(plusflux)
     except NameError:
         pass
-    plusflux[plus_case] = integral_plus_core(method, limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
-                                             theta_1[plus_case], theta_2[plus_case], precision=precision)
+    plusflux[plus_case] = integral_plus_core(
+        #method, 
+        limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
+        theta_1[plus_case], theta_2[plus_case], precision=precision)
     try:
         if len(case0[0]) > 0:
-            plusflux[case0] = integral_centred(method, limb_darkening_coefficients, rp_over_rs, 0.0, jnp.pi)
+            plusflux[case0] = integral_centred(
+                #method, 
+                limb_darkening_coefficients, rp_over_rs, 0.0, jnp.pi)
         if len(caseb[0]) > 0:
-            plusflux[caseb] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, jnp.pi)
+            plusflux[caseb] = integral_centred(
+                #method, 
+                limb_darkening_coefficients, 1, 0.0, jnp.pi)
     except NameError:
         if len(case0[0]) > 0:
-            plusflux[case0] = integral_centred(method, limb_darkening_coefficients, rp_over_rs, 0.0, np.pi)
+            plusflux[case0] = integral_centred(
+                #method, 
+                limb_darkening_coefficients, rp_over_rs, 0.0, np.pi)
         if len(caseb[0]) > 0:
-            plusflux[caseb] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, np.pi)
+            plusflux[caseb] = integral_centred(
+                #method, 
+                limb_darkening_coefficients, 1, 0.0, np.pi)
 
     # flux_lower
         
@@ -687,8 +711,10 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method
         jax.device_put(minsflux)
     except NameError:
         pass
-    minsflux[minus_case] = integral_minus_core(method, limb_darkening_coefficients, rp_over_rs,
-                                               z_over_rs[minus_case], 0.0, theta_2[minus_case], precision=precision)
+    minsflux[minus_case] = integral_minus_core(
+        #method, 
+        limb_darkening_coefficients, rp_over_rs,
+        z_over_rs[minus_case], 0.0, theta_2[minus_case], precision=precision)
 
     # flux_star
     starflux = np.zeros(len(z_over_rs))
@@ -696,19 +722,27 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, method
         jax.device_put(starflux)
     except NameError:
         pass
-    starflux[star_case] = integral_centred(method, limb_darkening_coefficients, 1, 0.0, ph[star_case])
+    starflux[star_case] = integral_centred(
+        #method, 
+        limb_darkening_coefficients, 1, 0.0, ph[star_case])
 
     # flux_total
     try:
-        total_flux = integral_centred(method, limb_darkening_coefficients, 1, 0.0, 2.0 * np.pi)
+        total_flux = integral_centred(
+            #method, 
+            limb_darkening_coefficients, 1, 0.0, 2.0 * np.pi)
     except NameError:
-        total_flux = integral_centred(method, limb_darkening_coefficients, 1, 0.0, 2.0 * jnp.pi)
+        total_flux = integral_centred(
+            #method, 
+            limb_darkening_coefficients, 1, 0.0, 2.0 * jnp.pi)
 
     return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
 
 @jax.jit
 def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
-            mid_time, time_array, method='claret', precision=3): # assuming only cupy arrays, if GPU
+            mid_time, time_array, 
+            #method='claret', 
+            precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
     position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
@@ -723,7 +757,8 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
 
     return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
-                             method=method, precision=precision)
+                             #method=method, 
+                             precision=precision)
 
 def transit(times, values): # assuming only cupy arrays, if GPU
     try:
@@ -755,7 +790,9 @@ def transit(times, values): # assuming only cupy arrays, if GPU
         mmodel = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
-                      values['tmid'], times, method='claret', precision=3)
+                      values['tmid'], times, 
+                      #method='claret', 
+                      precision=3)
         return np.from_dlpack(model) # must convert back from JAX tracer to Numpy array for CPU
     #except AttributeError:
     #except TypeError:
@@ -763,7 +800,9 @@ def transit(times, values): # assuming only cupy arrays, if GPU
         model = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
-                      values['tmid'], times, method='claret', precision=3)
+                      values['tmid'], times, 
+                      #method='claret', 
+                      precision=3)
         return model
 
 @jit(nopython=True)
