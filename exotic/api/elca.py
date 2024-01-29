@@ -658,10 +658,10 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         ph_case = jnp.concatenate((case5[0], casea[0], casec[0]))
         theta_1[ph_case] = ph[ph_case]
         theta_2 = jnp.arcsin(np.minimum(rp_over_rs / z_over_rs, 1))
-        theta_2[case1] = jnp.pi
-        theta_2[case2] = jnp.pi / 2.0
-        theta_2[casea] = jnp.pi
-        theta_2[casec] = jnp.pi / 2.0
+        theta_2[case1].set(jnp.pi)
+        theta_2[case2].set(jnp.pi / 2.0)
+        theta_2[casea].set(jnp.pi)
+        theta_2[casec].set(jnp.pi / 2.0)
     except NameError:
         ph = np.arccos(np.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
         theta_1 = np.zeros(len(z_over_rs))
