@@ -602,7 +602,6 @@ def integral_minus_core(
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc - partd
 
-@jax.jit
 def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, 
                       #method='claret', 
                       precision=3): # assuming only cupy arrays, if GPU
