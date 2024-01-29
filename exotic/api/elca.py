@@ -602,6 +602,7 @@ def integral_minus_core(
     partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc - partd
 
+@jax.jit
 def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs, 
                       #method='claret', 
                       precision=3): # assuming only cupy arrays, if GPU
@@ -657,11 +658,15 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         jax.device_put(theta_1)
         ph_case = jnp.concatenate((case5[0], casea[0], casec[0]))
         theta_1[ph_case] = ph[ph_case]
-        theta_2 = jnp.arcsin(np.minimum(rp_over_rs / z_over_rs, 1))
-        theta_2[case1] = jnp.pi
-        theta_2[case2] = jnp.pi / 2.0
-        theta_2[casea] = jnp.pi
-        theta_2[casec] = jnp.pi / 2.0
+        theta_2 = jnp.where(case1, jnp.pi, 
+                            jnp.where(case2, jnp.pi / 2.0,
+                                      jnp.where(casea, jnp.pi,
+                                                jnp.where(casec, jnp.pi / 2.0,
+                                                          jnp.arcsin(np.minimum(rp_over_rs / z_over_rs, 1))
+                                                )
+                                      )
+                            )
+                  )
     except NameError:
         ph = np.arccos(np.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
         theta_1 = np.zeros(len(z_over_rs))
