@@ -215,7 +215,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     return [x, y, z]
 
 #@maybe_decorate(jit(parallel=True, cache=True))
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
