@@ -1582,8 +1582,7 @@ class glc_fitter(lc_fitter):
                 except AttributeError:
                     pass
         try:
-            jax.device_put(self.lc_data[:]['time'])
-            jax.device_put(self.lc_data[:]['priors'])
+            jax.device_put(self.lc_data)
             jax.device_put(gauss_table)
         except NameError:
             pass
@@ -1606,8 +1605,7 @@ class glc_fitter(lc_fitter):
             self.results = ReactiveNestedSampler(freekeys, loglike, prior_transform).run(max_ncalls=1e6, show_status=False, viz_callback=noop)
 
         try:
-            jax.device_get(self.lc_data[:]['time'])
-            jax.device_get(self.lc_data[:]['priors'])
+            jax.device_get(self.lc_data)
             jax.device_get(self.results)
         except NameError:
             pass
