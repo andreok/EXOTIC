@@ -487,6 +487,11 @@ def gauss_numerical_integration(
     x1, x2 = (x2 - x1) / 2, (x2 + x1) / 2
 
     try:
+        print(gauss_table[precision][0][:, None])
+        print(x1[None, :])
+        print(gauss_table[precision][1][:, None])
+        print(x2[None, :])
+        print(num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args))
         return x1 * jnp.sum(gauss_table[precision][0][:, None] *
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
                        num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
