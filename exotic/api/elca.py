@@ -54,6 +54,7 @@ try:
     import jax.numpy as jnp
     import jax.scipy
     from jax.config import config; config.update('jax_enable_x64', True)
+    from functools import partial
     #from pylightcurve.models.exoplanet_lc import transit as pytransit
     #from pylightcurve_torch.functional import transit as pytransit
 except ImportError:
@@ -122,7 +123,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
         gw[np.isnan(gw)] = 0.01
     return gw, nearest.astype(int)
 
-@jax.partial(jit, static_argnums=(1,2,3,4,5,6,8,))
+@partial(jit, static_argnums=(1,2,3,4,5,6,8,))
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
