@@ -803,9 +803,9 @@ def transit(times, values): # assuming only cupy arrays, if GPU
         #              np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
         #              np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
         #return np.array(model, dtype=np.float64) # must convert back from Numpy array to cupy array for GPU
-        jax.device_put(times)
-        for k in values.keys():
-            jax.device_put(values[k])
+        #jax.device_put(times)
+        #for k in values.keys():
+        #    jax.device_put(values[k])
         mmodel = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
@@ -1540,8 +1540,10 @@ class glc_fitter(lc_fitter):
             bounddiff = np.diff(boundarray,1).reshape(-1)
         print(bounddiff)
         try:
-            jax.device_put(boundarray)
-            jax.device_put(bounddiff)
+            #jax.device_put(boundarray)
+            #jax.device_put(bounddiff)
+            boundarray = jnp.array(boundarray, dtype=jnp.float64)
+            bounddiff = jnp.array(bounddiff, dtype=jnp.float64)
         except NameError:
             pass
         def prior_transform(upars): # this runs on GPU via JAX arrays
@@ -1590,9 +1592,10 @@ class glc_fitter(lc_fitter):
                 #print(self.lc_data[i]['time'])
                 #print(self.lc_data[i]['priors'])
                 try:
-                    dlpack = np.array(self.lc_data[i]['time'], dtype=np.float64).toDlpack()
-                    model = transit(jax.dlpack.from_dlpack(dlpack), self.lc_data[i]['priors'])
-                    del dlpack
+                    #dlpack = np.array(self.lc_data[i]['time'], dtype=np.float64).toDlpack()
+                    #model = transit(jax.dlpack.from_dlpack(dlpack), self.lc_data[i]['priors'])
+                    #del dlpack
+                    model = transit(jnp.array(self.lc_data[i]['time'], dtype=jnp.float64), self.lc_data[i]['priors'])
                 except NameError:
                     model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
                 #print(model)
