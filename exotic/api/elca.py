@@ -54,7 +54,7 @@ try:
     import jax.numpy as jnp
     import jax.scipy
     from jax.config import config; config.update('jax_enable_x64', True)
-    from functools import partial
+    #from functools import partial
     #from pylightcurve.models.exoplanet_lc import transit as pytransit
     #from pylightcurve_torch.functional import transit as pytransit
 except ImportError:
