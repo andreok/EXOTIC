@@ -1585,7 +1585,7 @@ class glc_fitter(lc_fitter):
                 #print(self.lc_data[i]['priors'])
                 try:
                     dlpack = np.array(self.lc_data[i]['time'], dtype=np.float64).toDlpack()
-                    model = transit(jax.from_dlpack(dlpack), self.lc_data[i]['priors'])
+                    model = transit(jax.dlpack.from_dlpack(dlpack), self.lc_data[i]['priors'])
                     del dlpack
                 except NameError:
                     model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
