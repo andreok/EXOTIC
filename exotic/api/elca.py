@@ -45,10 +45,10 @@ from itertools import cycle
 import matplotlib.pyplot as plt
 from numba import jit, njit, prange
 try:
-    import numpy as np
-    #if 'np' in globals():
-    #    del globals()['np']
-    #import cupy as np
+    #import numpy as np
+    if 'np' in globals():
+        del globals()['np']
+    import cupy as np
     #import torch
     import jax
     import jax.numpy as jnp
@@ -797,9 +797,9 @@ def transit(times, values): # assuming only cupy arrays, if GPU
         #              np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
         #              np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
         #return np.array(model, dtype=np.float64) # must convert back from Numpy array to cupy array for GPU
-        jax.device_put(times)
-        for k in values.keys():
-            jax.device_put(values[k])
+        #jax.device_put(times)
+        #for k in values.keys():
+        #    jax.device_put(values[k])
         mmodel = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
@@ -1583,7 +1583,12 @@ class glc_fitter(lc_fitter):
                 # compute model
                 #print(self.lc_data[i]['time'])
                 #print(self.lc_data[i]['priors'])
-                model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
+                try:
+                    dlpack = np.array(self.lc_data[i]['time'], dtype=np.float64).toDlpack()
+                    model = transit(jax.from_dlpack(dlpack), self.lc_data[i]['priors'])
+                    del dlpack
+                except NameError:
+                    model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
                 #print(model)
                 try:
                     model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
