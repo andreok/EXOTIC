@@ -1590,11 +1590,11 @@ class glc_fitter(lc_fitter):
                 except NameError:
                     model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
                 #print(model)
-                try:
-                    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
-                except AttributeError:
-                    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
-                #model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+                #try:
+                #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
+                #except AttributeError:
+                #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
+                model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
                 #try:
                 #    model *= jnp.exp(self.lc_data[i]['priors']['a2']*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
                 #except NameError:
@@ -1603,10 +1603,11 @@ class glc_fitter(lc_fitter):
                 #detrend = self.lc_data[i]['flux']/model
                 detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
                 #print(detrend)
-                try:
-                    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
-                except AttributeError:
-                    model *= np.mean(detrend)
+                #try:
+                #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
+                #except AttributeError:
+                #    model *= np.mean(detrend)
+                model = np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64))
                 #try:
                 #    model *= jnp.mean(detrend)
                 #except NameError:
