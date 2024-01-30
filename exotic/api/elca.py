@@ -1651,6 +1651,8 @@ class glc_fitter(lc_fitter):
 
                 # maximization metric for nested sampling
                 return -0.5*chi2
+            except AttributeError:
+                pass
             except NameError:
                 pass
 
