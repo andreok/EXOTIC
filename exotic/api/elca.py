@@ -812,7 +812,7 @@ def transit(times, values): # assuming only cupy arrays, if GPU
                       values['tmid'], times, 
                       #method='claret', 
                       precision=3)
-        return np.from_dlpack(model) # must convert back from JAX tracer to Numpy array for CPU
+        return np.from_dlpack(model.toDlpack()) # must convert back from JAX tracer to Numpy array for CPU
     #except AttributeError:
     #except TypeError:
     except NameError:
