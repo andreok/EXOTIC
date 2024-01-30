@@ -1603,36 +1603,40 @@ class glc_fitter(lc_fitter):
                 #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
                 #except AttributeError:
                 #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
-                model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
-                #try:
-                #    model *= jnp.exp(self.lc_data[i]['priors']['a2']*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
-                #except NameError:
-                #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
+                #model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+                try:
+                    model *= jnp.exp(self.lc_data[i]['priors']['a2']*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+                except NameError:
+                    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
                 #print(model)
                 #detrend = self.lc_data[i]['flux']/model
-                detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
+                #detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
+                try:
+                    detrend = jnp.array(self.lc_data[i]['flux'], dtype=jnp.float64)/model
+                except NameError:
+                    detrend = self.lc_data[i]['flux']/model
                 #print(detrend)
                 #try:
                 #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
                 #except AttributeError:
                 #    model *= np.mean(detrend)
-                model = np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64))
-                #try:
-                #    model *= jnp.mean(detrend)
-                #except NameError:
-                #    model *= np.mean(detrend)
+                #model = np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64))
+                try:
+                    model *= jnp.mean(detrend)
+                except NameError:
+                    model *= np.mean(detrend)
                 #print(model)
 
                 # add to chi2
-                try:
-                    #chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                except AttributeError:
-                    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
                 #try:
-                #    chi2 += jnp.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
-                #except NameError:
+                #    #chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+                #    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+                #except AttributeError:
                 #    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+                try:
+                    chi2 += jnp.sum( ((jnp.array(self.lc_data[i]['flux'], dtype=jnp.float64)-model)/jnp.array(self.lc_data[i]['ferr'], dtype=jnp.float64))**2 ).item()
+                except NameError:
+                    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
                 #print(chi2)
 
             # maximization metric for nested sampling
