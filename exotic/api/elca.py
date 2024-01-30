@@ -1653,8 +1653,10 @@ class glc_fitter(lc_fitter):
                 return -0.5*chi2
             except AttributeError:
                 print('AttributeError on jax.vmap')
+                pass
             except NameError:
                 print('NameError on jax.vmap')
+                pass
 
             # for each light curve
             for i in range(nobs):
