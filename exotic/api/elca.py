@@ -803,9 +803,9 @@ def transit(times, values): # assuming only cupy arrays, if GPU
         #              np.asnumpy(values['ecc']), np.asnumpy(values['inc']), np.asnumpy(values['omega']),
         #              np.asnumpy(values['tmid']), np.asnumpy(times), method='claret', precision=3)
         #return np.array(model, dtype=np.float64) # must convert back from Numpy array to cupy array for GPU
-        #jax.device_put(times)
-        #for k in values.keys():
-        #    jax.device_put(values[k])
+        jax.device_put(times)
+        for k in values.keys():
+            jax.device_put(values[k])
         mmodel = pytransit([values['u0'], values['u1'], values['u2'], values['u3']],
                       values['rprs'], values['per'], values['ars'],
                       values['ecc'], values['inc'], values['omega'],
