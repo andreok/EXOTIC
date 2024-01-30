@@ -1558,8 +1558,8 @@ class glc_fitter(lc_fitter):
                     try:
                         dlpack = pars[j].toDlpack()
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
-                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
                         del dlpack
                     except AttributeError:
                         #self.lc_data[i]['priors'][key] = np.array(pars[j], dtype=np.float64)
@@ -1573,8 +1573,8 @@ class glc_fitter(lc_fitter):
                     try:
                         #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
                         dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
-                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
+                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
                         del dlpack
                     except AttributeError:
                         #self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
