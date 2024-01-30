@@ -1555,6 +1555,8 @@ class glc_fitter(lc_fitter):
             return (boundarray[:,0] + bounddiff*upars)
 
         def compute_chi2(pars):
+            chi2 = 0
+
             # global keys
             for j, key in enumerate(gfreekeys):
                 #print((j,key))
@@ -1569,70 +1571,72 @@ class glc_fitter(lc_fitter):
                     self.lc_data[i]['priors'][key] = pars[j]
                     
 
-                # local keys
-                ti = sum([len(self.local_bounds[k]) for k in range(i)])
-                for j, key in enumerate(lfreekeys[i]):
-                    #print((j,key))
-                    try:
-                        #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
-                        dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
-                        self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
-                        #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
-                        del dlpack
-                    except AttributeError:
-                        #self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
-                        self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
+            # local keys
+            ti = sum([len(self.local_bounds[k]) for k in range(i)])
+            for j, key in enumerate(lfreekeys[i]):
+                #print((j,key))
+                try:
+                    #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
+                    dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
+                    self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
+                    #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
+                    del dlpack
+                except AttributeError:
+                    #self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
+                    self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
-                # compute model
-                #print(self.lc_data[i]['time'])
-                #print(self.lc_data[i]['priors'])
-                try:
-                    #dlpack = np.array(self.lc_data[i]['time'], dtype=np.float64).toDlpack()
-                    #model = transit(jax.dlpack.from_dlpack(dlpack), self.lc_data[i]['priors'])
-                    #del dlpack
-                    model = transit(jnp.array(self.lc_data[i]['time'], dtype=jnp.float64), self.lc_data[i]['priors'])
-                except NameError:
-                    model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
-                #print(model)
-                #try:
-                #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
-                #except AttributeError:
-                #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
-                #model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
-                try:
-                    model *= jnp.exp(self.lc_data[i]['priors']['a2']*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
-                except NameError:
-                    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
-                #print(model)
-                #detrend = self.lc_data[i]['flux']/model
-                #detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
-                try:
-                    detrend = jnp.array(self.lc_data[i]['flux'], dtype=jnp.float64)/model
-                except NameError:
-                    detrend = self.lc_data[i]['flux']/model
-                #print(detrend)
-                #try:
-                #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
-                #except AttributeError:
-                #    model *= np.mean(detrend)
-                #model = np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64))
-                try:
-                    model *= jnp.mean(detrend)
-                except NameError:
-                    model *= np.mean(detrend)
-                #print(model)
+            # compute model
+            #print(self.lc_data[i]['time'])
+            #print(self.lc_data[i]['priors'])
+            try:
+                #dlpack = np.array(self.lc_data[i]['time'], dtype=np.float64).toDlpack()
+                #model = transit(jax.dlpack.from_dlpack(dlpack), self.lc_data[i]['priors'])
+                #del dlpack
+                model = transit(jnp.array(self.lc_data[i]['time'], dtype=jnp.float64), self.lc_data[i]['priors'])
+            except NameError:
+                model = transit(self.lc_data[i]['time'], self.lc_data[i]['priors'])
+            #print(model)
+            #try:
+            #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64)))
+            #except AttributeError:
+            #    model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
+            #model *= np.exp(np.array(self.lc_data[i]['priors']['a2'], dtype=np.float64)*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+            try:
+                model *= jnp.exp(self.lc_data[i]['priors']['a2']*np.array(self.lc_data[i]['airmass'], dtype=np.float64))
+            except NameError:
+                model *= np.exp(self.lc_data[i]['priors']['a2']*self.lc_data[i]['airmass'])
+            #print(model)
+            #detrend = self.lc_data[i]['flux']/model
+            #detrend = np.array(self.lc_data[i]['flux'], dtype=np.float64)/model
+            try:
+                detrend = jnp.array(self.lc_data[i]['flux'], dtype=jnp.float64)/model
+            except NameError:
+                detrend = self.lc_data[i]['flux']/model
+            #print(detrend)
+            #try:
+            #    model = np.asnumpy(np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64)))
+            #except AttributeError:
+            #    model *= np.mean(detrend)
+            #model = np.array(model, dtype=np.float64) * np.mean(np.array(detrend, dtype=np.float64))
+            try:
+                model *= jnp.mean(detrend)
+            except NameError:
+                model *= np.mean(detrend)
+            #print(model)
 
-                # add to chi2
-                #try:
-                #    #chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                #    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
-                #except AttributeError:
-                #    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
-                try:
-                    chi2 += jnp.sum( ((jnp.array(self.lc_data[i]['flux'], dtype=jnp.float64)-model)/jnp.array(self.lc_data[i]['ferr'], dtype=jnp.float64))**2 ).item()
-                except NameError:
-                    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
-                #print(chi2)
+            # add to chi2
+            #try:
+            #    #chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-np.array(model, dtype=np.float64))/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+            #    chi2 += np.sum( ((np.array(self.lc_data[i]['flux'], dtype=np.float64)-model)/np.array(self.lc_data[i]['ferr'], dtype=np.float64))**2 ).item()
+            #except AttributeError:
+            #    chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+            try:
+                chi2 += jnp.sum( ((jnp.array(self.lc_data[i]['flux'], dtype=jnp.float64)-model)/jnp.array(self.lc_data[i]['ferr'], dtype=jnp.float64))**2 ).item()
+            except NameError:
+                chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
+            #print(chi2)
+                    
+            return chi2
 
         def loglike(pars): # this runs on GPU via JAX arrays, but manipulates only Cupy arrays internally
             chi2 = 0
