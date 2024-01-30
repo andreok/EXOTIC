@@ -477,7 +477,13 @@ gauss60 = [
 ]
 
 # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/analysis/numerical_integration.py
-gauss_table = [np.swapaxes(np.array(gauss0, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss10, dtype=np.float64), 0, 1), 
+try:
+    gauss_table = [jnp.swapaxes(jnp.array(gauss0, dtype=jnp.float64), 0, 1), jnp.swapaxes(jnp.array(gauss10, dtype=jnp.float64), 0, 1), 
+               jnp.swapaxes(jnp.array(gauss20, dtype=jnp.float64), 0, 1), jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1), 
+               jnp.swapaxes(jnp.array(gauss40, dtype=jnp.float64), 0, 1), jnp.swapaxes(jnp.array(gauss50, dtype=jnp.float64), 0, 1),
+               jnp.swapaxes(jnp.array(gauss60, dtype=jnp.float64), 0, 1)]
+except NameError:
+    gauss_table = [np.swapaxes(np.array(gauss0, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss10, dtype=np.float64), 0, 1), 
                np.swapaxes(np.array(gauss20, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss30, dtype=np.float64), 0, 1), 
                np.swapaxes(np.array(gauss40, dtype=np.float64), 0, 1), np.swapaxes(np.array(gauss50, dtype=np.float64), 0, 1),
                np.swapaxes(np.array(gauss60, dtype=np.float64), 0, 1)]
