@@ -1643,9 +1643,9 @@ class glc_fitter(lc_fitter):
 
             try:
                 #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
-                chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.dlpack.from_dlpack(np.tile(np.from_dlpack(pars), nobs)))).item()
+                chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item()
                 #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
-                #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.dlpack.from_dlpack(np.tile(np.from_dlpack(pars), nobs)))).item()
+                #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item()
 
                 # maximization metric for nested sampling
                 return -0.5*chi2
