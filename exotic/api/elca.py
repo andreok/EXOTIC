@@ -1652,9 +1652,9 @@ class glc_fitter(lc_fitter):
                 # maximization metric for nested sampling
                 return -0.5*chi2
             except AttributeError:
-                pass
+                print('AttributeError on jax.vmap')
             except NameError:
-                pass
+                print('NameError on jax.vmap')
 
             # for each light curve
             for i in range(nobs):
