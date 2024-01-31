@@ -45,10 +45,10 @@ from itertools import cycle
 import matplotlib.pyplot as plt
 from numba import jit, njit, prange
 try:
-    #import numpy as np
-    if 'np' in globals():
-        del globals()['np']
-    import cupy as np
+    import numpy as np
+    #if 'np' in globals():
+    #    del globals()['np']
+    #import cupy as np
     #import torch
     import jax
     import jax.numpy as jnp
