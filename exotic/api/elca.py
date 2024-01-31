@@ -1647,7 +1647,7 @@ class glc_fitter(lc_fitter):
 
             print(nobs)
             print(pars.shape)
-            print(type(pars)
+            print(type(pars))
             print(jnp.tile(pars, nobs).shape)
             print(type(jnp.tile(pars, nobs)))
             print(jnp.tile(jnp.array(pars,dtype=jnp.float64), nobs).shape)
