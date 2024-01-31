@@ -1642,9 +1642,9 @@ class glc_fitter(lc_fitter):
             chi2 = 0
 
             print(nobs)
-            print(pars)
-            print(jnp.tile(pars, nobs))
-            print(jnp.tile(jnp.array([pars,],dtype=jnp.float64), nobs))
+            print(pars.shape)
+            print(jnp.tile(pars, nobs).shape)
+            print(jnp.tile(jnp.array([pars,],dtype=jnp.float64), nobs).shape)
             print(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs)))
             print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))))
             print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item())
