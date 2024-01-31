@@ -1682,7 +1682,7 @@ class glc_fitter(lc_fitter):
                     rprs = jnp.concatenate(rprs, self.lc_data[i]['priors']['rprs'], dtype=jnp.float64)
                     per = jnp.concatenate(rprs, self.lc_data[i]['priors']['per'], dtype=jnp.float64)
                     ars = jnp.concatenate(rprs, self.lc_data[i]['priors']['ars'], dtype=jnp.float64)
-                    ecc = jnp.concatenate(rprs, self.lc_data[i]['priors']['ecc']], dtype=jnp.float64)
+                    ecc = jnp.concatenate(rprs, self.lc_data[i]['priors']['ecc'], dtype=jnp.float64)
                     inc = jnp.concatenate(rprs, self.lc_data[i]['priors']['inc'], dtype=jnp.float64)
                     omega = jnp.concatenate(rprs, self.lc_data[i]['priors']['omega'], dtype=jnp.float64)
                     tmid = jnp.concatenate(rprs, self.lc_data[i]['priors']['tmid'], dtype=jnp.float64)
