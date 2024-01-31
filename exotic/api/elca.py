@@ -1566,8 +1566,8 @@ class glc_fitter(lc_fitter):
             for j, key in enumerate(gfreekeys):
                 print((j,key))
                 try:
-                    print(pars.at[j])
-                    self.lc_data[i]['priors'][key] = pars.at[j]
+                    print(pars.val[j].item())
+                    self.lc_data[i]['priors'][key] = pars.val[j].item()
                     #dlpack = pars.at[j].toDlpack()
                     #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
                     #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
@@ -1583,7 +1583,7 @@ class glc_fitter(lc_fitter):
             for j, key in enumerate(lfreekeys[i]):
                 #print((j,key))
                 try:
-                    self.lc_data[i]['priors'][key] = pars.at[j+ti+len(gfreekeys)]
+                    self.lc_data[i]['priors'][key] = pars.val[j+ti+len(gfreekeys)].item()
                     #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars.at[j+ti+len(gfreekeys)]))
                     #dlpack = pars.at[j+ti+len(gfreekeys)].toDlpack()
                     #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
@@ -1654,7 +1654,6 @@ class glc_fitter(lc_fitter):
             print(type(pars))
             print(jnp.tile(pars, nobs).shape)
             print(type(jnp.tile(pars, nobs)))
-            print(jnp.tile(jnp.array(pars,dtype=jnp.float64), nobs).shape)
             print(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs)))
             print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))))
             print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item())
