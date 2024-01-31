@@ -1565,7 +1565,7 @@ class glc_fitter(lc_fitter):
             for j, key in enumerate(gfreekeys):
                 #print((j,key))
                 try:
-                    dlpack = pars[j].toDlpack()
+                    dlpack = pars.at[j].toDlpack()
                     #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
                     self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
                     #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
@@ -1580,8 +1580,8 @@ class glc_fitter(lc_fitter):
             for j, key in enumerate(lfreekeys[i]):
                 #print((j,key))
                 try:
-                    #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars[j+ti+len(gfreekeys)]))
-                    dlpack = pars[j+ti+len(gfreekeys)].toDlpack()
+                    #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(pars.at[j+ti+len(gfreekeys)]))
+                    dlpack = pars.at[j+ti+len(gfreekeys)].toDlpack()
                     self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack).item()
                     #self.lc_data[i]['priors'][key] = np.from_dlpack(dlpack)
                     del dlpack
