@@ -1559,7 +1559,7 @@ class glc_fitter(lc_fitter):
 
             print(gfreekeys)
             print(pars.shape)
-            print(type(pars)
+            print(type(pars))
 
             # global keys
             for j, key in enumerate(gfreekeys):
