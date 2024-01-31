@@ -1557,6 +1557,9 @@ class glc_fitter(lc_fitter):
         def compute_chi2(pars):
             chi2 = 0
 
+            print(gfreekeys)
+            print(pars.shape)
+
             # global keys
             for j, key in enumerate(gfreekeys):
                 #print((j,key))
