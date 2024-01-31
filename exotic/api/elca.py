@@ -1628,7 +1628,7 @@ class glc_fitter(lc_fitter):
             #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))))
             #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item())
             try:
-                limb_darkening_coefficients = jnp.array([], dtype=jnp.float64)
+                limb_darkening_coefficients = jnp.array([], dtype=jnp.float64).reshape(0,4)
                 rprs = jnp.array([], dtype=jnp.float64)
                 per = jnp.array([], dtype=jnp.float64)
                 ars = jnp.array([], dtype=jnp.float64)
@@ -1677,7 +1677,7 @@ class glc_fitter(lc_fitter):
                         jnp.array([self.lc_data[i]['priors']['u0'], 
                                    self.lc_data[i]['priors']['u1'], 
                                    self.lc_data[i]['priors']['u2'], 
-                                   self.lc_data[i]['priors']['u3']], dtype=jnp.float64).T, 
+                                   self.lc_data[i]['priors']['u3']], dtype=jnp.float64), 
                         dtype=jnp.float64)
                     rprs = jnp.concatenate(rprs, self.lc_data[i]['priors']['rprs'], dtype=jnp.float64)
                     per = jnp.concatenate(rprs, self.lc_data[i]['priors']['per'], dtype=jnp.float64)
@@ -1697,7 +1697,7 @@ class glc_fitter(lc_fitter):
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
                     chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(
-                        limb_darkening_coefficients.T, rprs, per, ars, ecc, inc, omega, tmid, 
+                        limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
                         times, a2, airmass, flux, ferr
                         )).item()
                 except ValueError:
@@ -1705,7 +1705,7 @@ class glc_fitter(lc_fitter):
                     #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
                     #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
                     chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(
-                        limb_darkening_coefficients.T, rprs, per, ars, ecc, inc, omega, tmid, 
+                        limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
                         times, a2, airmass, flux, ferr
                         )).item()
 
