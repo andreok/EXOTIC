@@ -130,23 +130,21 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
     try:
-        #inclination = inclination * jnp.pi / 180.0
-        #periastron = periastron * jnp.pi / 180.0
-        #ww = ww * jnp.pi / 180.0
+        print(inclination)
+        print(inclination * jnp.pi / 180.0)
+        inclination = inclination * jnp.pi / 180.0
+        periastron = periastron * jnp.pi / 180.0
+        ww = ww * jnp.pi / 180.0
 
         if eccentricity == 0 and ww == 0:
             vv = 2 * jnp.pi * (time_array - mid_time) / period
             bb = sma_over_rs * jnp.cos(vv)
-            #return [bb * jnp.sin(inclination), sma_over_rs * jnp.sin(vv), - bb * jnp.cos(inclination)]
-            return [bb * jnp.sin(inclination * jnp.pi / 180.0), sma_over_rs * jnp.sin(vv), - bb * jnp.cos(inclination * jnp.pi / 180.0)]
+            return [bb * jnp.sin(inclination), sma_over_rs * jnp.sin(vv), - bb * jnp.cos(inclination)]
 
-        #if periastron < jnp.pi / 2:
-        if (periastron * jnp.pi / 180.0) < jnp.pi / 2:
-            #aa = 1.0 * jnp.pi / 2 - (periastron
-            aa = 1.0 * jnp.pi / 2 - (periastron * jnp.pi / 180.0)
+        if periastron < jnp.pi / 2:
+            aa = 1.0 * jnp.pi / 2 - periastron
         else:
-            #aa = 5.0 * jnp.pi / 2 - periastron
-            aa = 5.0 * jnp.pi / 2 - (periastron * jnp.pi / 180.0)
+            aa = 5.0 * jnp.pi / 2 - periastron
         bb = 2 * jnp.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2))
         if bb < 0:
             bb += 2 * jnp.pi
@@ -168,17 +166,12 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         vv = 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2))
         rr = sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv))
 
-        #aa = jnp.cos(vv + periastron)
-        aa = jnp.cos(vv + (periastron * jnp.pi / 180.0))
-        #bb = jnp.sin(vv + periastron)
-        bb = jnp.sin(vv + (periastron * jnp.pi / 180.0))
+        aa = jnp.cos(vv + periastron)
+        bb = jnp.sin(vv + periastron)
 
-        #x = rr * bb * jnp.sin(inclination)
-        x = rr * bb * jnp.sin(inclination * jnp.pi / 180.0)
-        #y = rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination))
-        y = rr * (-aa * jnp.cos(ww * jnp.pi / 180.0) + bb * jnp.sin(ww * jnp.pi / 180.0) * jnp.cos(inclination * jnp.pi / 180.0))
-        #z = rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination))
-        z = rr * (-aa * jnp.sin(ww * jnp.pi / 180.0) - bb * jnp.cos(ww * jnp.pi / 180.0) * jnp.cos(inclination * jnp.pi / 180.0))
+        x = rr * bb * jnp.sin(inclination)
+        y = rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination))
+        z = rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination))
     except NameError:
         inclination = inclination * np.pi / 180.0
         periastron = periastron * np.pi / 180.0
