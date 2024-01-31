@@ -1557,16 +1557,16 @@ class glc_fitter(lc_fitter):
         def compute_chi2(pars):
             chi2 = 0
 
-            print(i)
-            print(gfreekeys)
-            print(pars.shape)
-            print(type(pars))
+            #print(i)
+            #print(gfreekeys)
+            #print(pars.shape)
+            #print(type(pars))
 
             # global keys
             for j, key in enumerate(gfreekeys):
-                print((j,key))
+                #print((j,key))
                 try:
-                    print(pars.val[j].item())
+                    #print(pars.val[j].item())
                     self.lc_data[i]['priors'][key] = pars.val[j].item()
                     #dlpack = pars.at[j].toDlpack()
                     #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
@@ -1649,14 +1649,14 @@ class glc_fitter(lc_fitter):
         def loglike(pars): # this runs on GPU via JAX arrays, but manipulates only Cupy arrays internally
             chi2 = 0
 
-            print(nobs)
-            print(pars.shape)
-            print(type(pars))
-            print(jnp.tile(pars, nobs).shape)
-            print(type(jnp.tile(pars, nobs)))
-            print(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs)))
-            print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))))
-            print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item())
+            #print(nobs)
+            #print(pars.shape)
+            #print(type(pars))
+            #print(jnp.tile(pars, nobs).shape)
+            #print(type(jnp.tile(pars, nobs)))
+            #print(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs)))
+            #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))))
+            #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item())
             try:
                 #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
                 #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
