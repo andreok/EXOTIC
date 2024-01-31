@@ -1557,14 +1557,16 @@ class glc_fitter(lc_fitter):
         def compute_chi2(pars):
             chi2 = 0
 
+            print(i)
             print(gfreekeys)
             print(pars.shape)
             print(type(pars))
 
             # global keys
             for j, key in enumerate(gfreekeys):
-                #print((j,key))
+                print((j,key))
                 try:
+                    print(pars.at[j])
                     self.lc_data[i]['priors'][key] = pars.at[j]
                     #dlpack = pars.at[j].toDlpack()
                     #self.lc_data[i]['priors'][key] = np.asnumpy(np.from_dlpack(dlpack))
