@@ -1693,6 +1693,21 @@ class glc_fitter(lc_fitter):
                     flux = np.append(flux, self.lc_data[i]['flux'])
                     ferr = np.append(flux, self.lc_data[i]['ferr'])
 
+                print(nobs)
+                print(limb_darkening_coefficients)
+                print(rprs)
+                print(per)
+                print(ars)
+                print(ecc)
+                print(inc)
+                print(omega)
+                print(tmid)
+                print(times)
+                print(a2)
+                print(airmass)
+                print(flux)
+                print(ferr)
+
                 try:
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
