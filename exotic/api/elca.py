@@ -1677,20 +1677,19 @@ class glc_fitter(lc_fitter):
                         np.array([self.lc_data[i]['priors']['u0'], 
                                    self.lc_data[i]['priors']['u1'], 
                                    self.lc_data[i]['priors']['u2'], 
-                                   self.lc_data[i]['priors']['u3']], dtype=np.float64), 
-                        dtype=np.float64)
-                    rprs = np.append(rprs, self.lc_data[i]['priors']['rprs'], dtype=np.float64)
-                    per = np.append(rprs, self.lc_data[i]['priors']['per'], dtype=np.float64)
-                    ars = np.append(rprs, self.lc_data[i]['priors']['ars'], dtype=np.float64)
-                    ecc = np.append(rprs, self.lc_data[i]['priors']['ecc'], dtype=np.float64)
-                    inc = np.append(rprs, self.lc_data[i]['priors']['inc'], dtype=np.float64)
-                    omega = np.append(rprs, self.lc_data[i]['priors']['omega'], dtype=np.float64)
-                    tmid = np.append(rprs, self.lc_data[i]['priors']['tmid'], dtype=np.float64)
-                    times = np.append(rprs, self.lc_data[i]['time'], dtype=np.float64)
-                    a2 = np.append(a2, self.lc_data[i]['priors']['a2'], dtype=np.float64)
-                    airmass = np.append(airmass, self.lc_data[i]['airmass'], dtype=np.float64)
-                    flux = np.append(flux, self.lc_data[i]['flux'], dtype=np.float64)
-                    ferr = np.append(flux, self.lc_data[i]['ferr'], dtype=np.float64)
+                                   self.lc_data[i]['priors']['u3']], dtype=np.float64))
+                    rprs = np.append(rprs, self.lc_data[i]['priors']['rprs'])
+                    per = np.append(rprs, self.lc_data[i]['priors']['per'])
+                    ars = np.append(rprs, self.lc_data[i]['priors']['ars'])
+                    ecc = np.append(rprs, self.lc_data[i]['priors']['ecc'])
+                    inc = np.append(rprs, self.lc_data[i]['priors']['inc'])
+                    omega = np.append(rprs, self.lc_data[i]['priors']['omega'])
+                    tmid = np.append(rprs, self.lc_data[i]['priors']['tmid'])
+                    times = np.append(rprs, self.lc_data[i]['time'])
+                    a2 = np.append(a2, self.lc_data[i]['priors']['a2'])
+                    airmass = np.append(airmass, self.lc_data[i]['airmass'])
+                    flux = np.append(flux, self.lc_data[i]['flux'])
+                    ferr = np.append(flux, self.lc_data[i]['ferr'])
 
                 try:
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
