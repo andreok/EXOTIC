@@ -1673,7 +1673,7 @@ class glc_fitter(lc_fitter):
                             #self.lc_data[i]['priors'][key] = np.array(pars[j+ti+len(gfreekeys)], dtype=np.float64)
                             self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
-                    limb_darkening_coefficients=jnp.concatenate(limb_darkening_coefficients, 
+                    limb_darkening_coefficients=jnp.append(limb_darkening_coefficients, 
                         jnp.array([self.lc_data[i]['priors']['u0'], 
                                    self.lc_data[i]['priors']['u1'], 
                                    self.lc_data[i]['priors']['u2'], 
