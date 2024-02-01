@@ -135,17 +135,19 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         periastron = periastron * jnp.pi / 180.0
         ww = ww * jnp.pi / 180.0
 
-        case_periastron = periastron < jnp.pi / 2
         case_circular = (eccentricity == 0) * (ww == 0)
         case_not_circular = (eccentricity != 0) + (ww != 0)
 
-        aa = jax.lax.select(case_periastron, jnp.full_like(periastron, 1.0, dtype=jnp.float64) * jnp.pi / 2 - periastron, jnp.full_like(periastron, 5.0, dtype=jnp.float64) * jnp.pi / 2 - periastron)
-        bb = jax.lax.select(case_circular, sma_over_rs * jnp.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
+        vv = 2 * np.pi * (time_array - mid_time) / period
 
-        bb = jax.lax.select(case_not_circular * (bb < 0), bb + 2 * jnp.pi, bb)
+        aa = jax.lax.select(periastron < jnp.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
+        bb = jax.lax.select(case_circular, sma_over_rs * jnp.cos(vv), 0 * time_array)
 
-        mid_time = mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
-        m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
+        cc = jax.lax.select(case_not_circular, 2 * np.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * np.tan(aa / 2)), 0 * eccentricity)
+        cc = jax.lax.select(case_not_circular * (cc < 0), cc + 2 * jnp.pi, cc)
+
+        mid_time = jax.lax.select(case_not_circular, mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (cc - eccentricity * jnp.sin(bb)), 0 * mid_time)
+        m = jax.lax.select(case_not_circular, (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period, 0 * time_array)
         u0 = m
         u1 = 0 * m
         ii = 0
