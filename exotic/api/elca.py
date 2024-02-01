@@ -145,7 +145,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         mid_time = mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
         m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
         u0 = m
-        u1 = 0.
+        u1 = 0 * m
         ii = 0
         def raise_error(n):
             raise RuntimeError(f'Failed to find a solution in {n} loops')
