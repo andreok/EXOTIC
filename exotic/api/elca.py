@@ -1650,11 +1650,11 @@ class glc_fitter(lc_fitter):
                 omega = np.array([], dtype=np.float64)
                 tmid = np.array([], dtype=np.float64)
                 a2 = np.array([], dtype=np.float64)
-                airmass = np.array([], dtype=np.float64)
 
                 times = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
                 flux = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
                 ferr = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
+                airmass = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
 
                 # for each light curve
                 for i in range(nobs):
@@ -1700,7 +1700,7 @@ class glc_fitter(lc_fitter):
                     omega = np.append(omega, self.lc_data[i]['priors']['omega'])
                     tmid = np.append(tmid, self.lc_data[i]['priors']['tmid'])
                     a2 = np.append(a2, self.lc_data[i]['priors']['a2'])
-                    airmass = np.append(airmass, self.lc_data[i]['airmass'])
+                    
 
                     empty_array = np.full_like(np.array(alltime), fill_value=np.NaN, dtype=np.float64)
                     _, ind, _ = np.intersect1d(np.array(alltime), self.lc_data[i]['time'], return_indices=True, assume_unique=True)
@@ -1715,6 +1715,9 @@ class glc_fitter(lc_fitter):
                     ferr_array = empty_array
                     np.put(ferr_array, ind, self.lc_data[i]['ferr'])
                     ferr = np.append(ferr, [ferr_array], axis=0)
+                    airmass_array = empty_array
+                    np.put(airmass_array, ind, self.lc_data[i]['airmass'])
+                    airmass = np.append(airmass, [airmass_array], axis=0)
 
                 print(nobs)
                 print(limb_darkening_coefficients.shape)
@@ -1736,8 +1739,8 @@ class glc_fitter(lc_fitter):
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
                     chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(
-                        limb_darkening_coefficients.T, rprs, per, ars, ecc, inc, omega, tmid, 
-                        times.T, a2, airmass, flux.T, ferr.T
+                        limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
+                        times, a2, airmass, flux, ferr
                         )).item()
                 except ValueError:
                     #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
