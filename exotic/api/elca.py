@@ -1729,19 +1729,19 @@ class glc_fitter(lc_fitter):
                 print(flux.shape)
                 print(ferr.shape)
 
-                try:
-                    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
-                    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
-                    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
-                    chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(
-                        limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
-                        times, a2, airmass, flux, ferr
-                        )).item()
-                except ValueError:
-                    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
-                    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
-                    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
-                    chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(
+                #try:
+                #    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
+                #    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
+                #    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
+                #    chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(
+                #        limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
+                #        times, a2, airmass, flux, ferr
+                #        )).item()
+                #except ValueError:
+                #    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
+                #    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
+                #    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
+                chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(
                         limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
                         times, a2, airmass, flux, ferr
                         )).item()
