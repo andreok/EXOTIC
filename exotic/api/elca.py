@@ -134,42 +134,36 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         periastron = periastron * jnp.pi / 180.0
         ww = ww * jnp.pi / 180.0
 
-        if eccentricity == 0 and ww == 0:
-            vv = 2 * jnp.pi * (time_array - mid_time) / period
-            bb = sma_over_rs * jnp.cos(vv)
-            return [bb * jnp.sin(inclination), sma_over_rs * jnp.sin(vv), - bb * jnp.cos(inclination)]
+        aa = jnp.where(periastron < np.pi / 2, 1.0 * np.pi / 2 - periastron, 5.0 * np.pi / 2 - periastron)
+        bb = jnp.where(eccentricity == 0 and ww == 0, sma_over_rs * np.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * np.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * np.tan(aa / 2)))
 
-        if periastron < jnp.pi / 2:
-            aa = 1.0 * jnp.pi / 2 - periastron
-        else:
-            aa = 5.0 * jnp.pi / 2 - periastron
-        bb = 2 * jnp.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2))
-        if bb < 0:
-            bb += 2 * jnp.pi
-        mid_time = float(mid_time) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
-        m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
+        bb = jnp.where((eccentricity != 0 or ww != 0) and bb < 0, bb + 2 * np.pi, bb)
+
+        mid_time = float(mid_time) - (period / 2.0 / np.pi) * (bb - eccentricity * np.sin(bb))
+        m = (time_array - mid_time - np.int_((time_array - mid_time) / period) * period) * 2.0 * np.pi / period
         u0 = m
         stop = False
         u1 = 0
         for ii in range(10000):  # setting a limit of 1k iterations - arbitrary limit
-            u1 = u0 - (u0 - eccentricity * jnp.sin(u0) - m) / (1 - eccentricity * jnp.cos(u0))
-            stop = (jnp.abs(u1 - u0) < 10 ** (-6)).all()
+            u1 = u0 - (u0 - eccentricity * np.sin(u0) - m) / (1 - eccentricity * np.cos(u0))
+            stop = (np.abs(u1 - u0) < 10 ** (-6)).all()
             if stop:
                 break
             else:
                 u0 = u1
         if not stop:
             raise RuntimeError('Failed to find a solution in 10000 loops')
+        
+        vv = jnp.where(eccentricity == 0 and ww == 0, 2 * jnp.pi * (time_array - mid_time) / period, 2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity)) * np.tan((u1) / 2)))
+        
+        rr = sma_over_rs * (1 - (eccentricity ** 2)) / (np.ones_like(vv) + eccentricity * np.cos(vv))
 
-        vv = 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2))
-        rr = sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv))
+        aa = np.cos(vv + periastron)
+        bb = jnp.where(eccentricity == 0 and ww == 0, bb, np.sin(vv + periastron))
 
-        aa = jnp.cos(vv + periastron)
-        bb = jnp.sin(vv + periastron)
-
-        x = rr * bb * jnp.sin(inclination)
-        y = rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination))
-        z = rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination))
+        x = jnp.where(eccentricity == 0 and ww == 0, bb * np.sin(inclination), rr * bb * np.sin(inclination))
+        y = jnp.where(eccentricity == 0 and ww == 0, sma_over_rs * np.sin(vv), rr * (-aa * np.cos(ww) + bb * np.sin(ww) * np.cos(inclination)))
+        z = jnp.where(eccentricity == 0 and ww == 0, - bb * np.cos(inclination), rr * (-aa * np.sin(ww) - bb * np.cos(ww) * np.cos(inclination)))
     except NameError:
         inclination = inclination * np.pi / 180.0
         periastron = periastron * np.pi / 180.0
@@ -758,19 +752,13 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
 
     return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
 
-lambda_planet_orbit = lambda period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array: planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
-lambda_transit_flux_drop = lambda limb_darkening_coefficients, rp_over_rs, projected_distance, precision: transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance, precision)
-
 def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
             mid_time, time_array, 
             #method='claret', 
             precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
-    try:
-        position_vector = lambda_planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
-    except NameError:
-        position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
+    position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
 
     try:
         projected_distance = jnp.where(
@@ -781,12 +769,7 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
             np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
 
-    try:
-        return lambda_transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
-                             #method=method, 
-                             precision=np.full_like(rp_over_rs, precision))
-    except NameError:
-        return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
+    return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              #method=method, 
                              precision=precision)
 
