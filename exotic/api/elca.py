@@ -1617,6 +1617,36 @@ class glc_fitter(lc_fitter):
                     
             return chi2
 
+        # make global time array and masks for each data set
+        alltime = []
+        for i in range(nobs):
+            alltime.extend(self.lc_data[i]['time'])
+
+        times = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
+        flux = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
+        ferr = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
+        airmass = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
+
+        # for each light curve
+        for i in range(nobs):
+            #print(i)
+            empty_array = np.full_like(np.array(alltime), fill_value=np.NaN, dtype=np.float64)
+            _, ind, _ = np.intersect1d(np.array(alltime), self.lc_data[i]['time'], return_indices=True, assume_unique=True)
+            time_array = empty_array
+            np.put(time_array, ind, self.lc_data[i]['time'])
+            times = np.append(times, [time_array], axis=0)
+            #tmask = np.in1d(np.array(alltime), self.data[i]['time'])
+            #times = np.append(time, [np.ma.array(alltime, mask=tmask)], axis=0)
+            flux_array = empty_array
+            np.put(flux_array, ind, self.lc_data[i]['flux'])
+            flux = np.append(flux, [flux_array], axis=0)
+            ferr_array = empty_array
+            np.put(ferr_array, ind, self.lc_data[i]['ferr'])
+            ferr = np.append(ferr, [ferr_array], axis=0)
+            airmass_array = empty_array
+            np.put(airmass_array, ind, self.lc_data[i]['airmass'])
+            airmass = np.append(airmass, [airmass_array], axis=0)
+
         def loglike(pars): # this runs on GPU via JAX arrays, but manipulates only Cupy arrays internally
             chi2 = 0
 
@@ -1629,11 +1659,6 @@ class glc_fitter(lc_fitter):
             #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))))
             #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item())
             try:
-                # make global time array and masks for each data set
-                alltime = []
-                for i in range(nobs):
-                    alltime.extend(self.lc_data[i]['time'])
-
                 limb_darkening_coefficients = np.array([[]], dtype=np.float64).reshape(0,4)
                 rprs = np.array([], dtype=np.float64)
                 per = np.array([], dtype=np.float64)
@@ -1643,11 +1668,6 @@ class glc_fitter(lc_fitter):
                 omega = np.array([], dtype=np.float64)
                 tmid = np.array([], dtype=np.float64)
                 a2 = np.array([], dtype=np.float64)
-
-                times = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
-                flux = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
-                ferr = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
-                airmass = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
 
                 # for each light curve
                 for i in range(nobs):
@@ -1693,24 +1713,6 @@ class glc_fitter(lc_fitter):
                     omega = np.append(omega, self.lc_data[i]['priors']['omega'])
                     tmid = np.append(tmid, self.lc_data[i]['priors']['tmid'])
                     a2 = np.append(a2, self.lc_data[i]['priors']['a2'])
-                    
-
-                    empty_array = np.full_like(np.array(alltime), fill_value=np.NaN, dtype=np.float64)
-                    _, ind, _ = np.intersect1d(np.array(alltime), self.lc_data[i]['time'], return_indices=True, assume_unique=True)
-                    time_array = empty_array
-                    np.put(time_array, ind, self.lc_data[i]['time'])
-                    times = np.append(times, [time_array], axis=0)
-                    #tmask = np.in1d(np.array(alltime), self.data[i]['time'])
-                    #times = np.append(time, [np.ma.array(alltime, mask=tmask)], axis=0)
-                    flux_array = empty_array
-                    np.put(flux_array, ind, self.lc_data[i]['flux'])
-                    flux = np.append(flux, [flux_array], axis=0)
-                    ferr_array = empty_array
-                    np.put(ferr_array, ind, self.lc_data[i]['ferr'])
-                    ferr = np.append(ferr, [ferr_array], axis=0)
-                    airmass_array = empty_array
-                    np.put(airmass_array, ind, self.lc_data[i]['airmass'])
-                    airmass = np.append(airmass, [airmass_array], axis=0)
 
                 print(nobs)
                 print(limb_darkening_coefficients.shape)
