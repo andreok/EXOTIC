@@ -138,10 +138,10 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         case_circular = (eccentricity == 0) * (ww == 0)
         case_not_circular = (eccentricity != 0) + (ww != 0)
 
-        aa = jnp.where(periastron < np.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
-        bb = jnp.where(case_circular, sma_over_rs * jnp.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
+        aa = jnp.select(periastron < np.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
+        bb = jnp.select(case_circular, sma_over_rs * jnp.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
 
-        bb = jnp.where(case_not_circular * (bb < 0), bb + 2 * jnp.pi, bb)
+        bb = jnp.select(case_not_circular * (bb < 0), bb + 2 * jnp.pi, bb)
 
         mid_time = mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
         m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
@@ -160,18 +160,18 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
             ii += 1
             jax.lax.cond(ii < 10000, lambda _: None, lambda ii: jax.debug.callback(raise_error, ii), ii) # setting a limit of 1k iterations - arbitrary limit
             return (u0, u1, ii)
-        u0, u1, ii = jnp.where(case_circular, tuple([u0, u1, ii]), jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=tuple([u0, u1, ii])))
+        u0, u1, ii = jnp.select(case_circular, tuple([u0, u1, ii]), jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=tuple([u0, u1, ii])))
         
-        vv = jnp.where(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
+        vv = jnp.select(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
         
-        rr = jnp.where(case_circular, 0., sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
+        rr = jnp.select(case_circular, 0., sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
 
-        aa = jnp.where(case_circular, 0., jnp.cos(vv + periastron))
-        bb = jnp.where(case_circular, bb, jnp.sin(vv + periastron))
+        aa = jnp.select(case_circular, 0., jnp.cos(vv + periastron))
+        bb = jnp.select(case_circular, bb, jnp.sin(vv + periastron))
 
-        x = jnp.where(case_circular, bb * jnp.sin(inclination), rr * bb * jnp.sin(inclination))
-        y = jnp.where(case_circular, sma_over_rs * jnp.sin(vv), rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
-        z = jnp.where(case_circular, - bb * jnp.cos(inclination), rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
+        x = jnp.select(case_circular, bb * jnp.sin(inclination), rr * bb * jnp.sin(inclination))
+        y = jnp.select(case_circular, sma_over_rs * jnp.sin(vv), rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
+        z = jnp.select(case_circular, - bb * jnp.cos(inclination), rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
     except NameError:
         inclination = inclination * np.pi / 180.0
         periastron = periastron * np.pi / 180.0
