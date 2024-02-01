@@ -137,8 +137,8 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         case_circular = (eccentricity == 0) * (ww == 0)
         case_not_circular = (eccentricity != 0) + (ww != 0)
 
-        aa = jnp.where(periastron < np.pi / 2, 1.0 * np.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
-        bb = jnp.where(case_circular, sma_over_rs * np.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
+        aa = jnp.where(periastron < np.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
+        bb = jnp.where(case_circular, sma_over_rs * jnp.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
 
         bb = jnp.where(case_not_circular * (bb < 0), bb + 2 * jnp.pi, bb)
 
