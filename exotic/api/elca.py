@@ -135,10 +135,11 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         periastron = periastron * jnp.pi / 180.0
         ww = ww * jnp.pi / 180.0
 
+        case_periastron = periastron < jnp.pi / 2
         case_circular = (eccentricity == 0) * (ww == 0)
         case_not_circular = (eccentricity != 0) + (ww != 0)
 
-        aa = jnp.select(periastron < jnp.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
+        aa = jnp.select(case_periastron, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
         bb = jnp.select(case_circular, sma_over_rs * jnp.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
 
         bb = jnp.select(case_not_circular * (bb < 0), bb + 2 * jnp.pi, bb)
