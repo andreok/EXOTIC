@@ -135,9 +135,9 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         ww = ww * jnp.pi / 180.0
 
         aa = jnp.where(periastron < np.pi / 2, 1.0 * np.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
-        bb = jnp.where(eccentricity == 0 and ww == 0, sma_over_rs * np.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
+        bb = jnp.where(eccentricity == 0 & ww == 0, sma_over_rs * np.cos(2 * jnp.pi * (time_array - mid_time) / period), 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)))
 
-        bb = jnp.where((eccentricity != 0 or ww != 0) and bb < 0, bb + 2 * jnp.pi, bb)
+        bb = jnp.where((eccentricity != 0 | ww != 0) & bb < 0, bb + 2 * jnp.pi, bb)
 
         mid_time = float(mid_time) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
         m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
@@ -154,16 +154,16 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         if not stop:
             raise RuntimeError('Failed to find a solution in 10000 loops')
         
-        vv = jnp.where(eccentricity == 0 and ww == 0, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
+        vv = jnp.where(eccentricity == 0 & ww == 0, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
         
-        rr = jnp.where(eccentricity == 0 and ww == 0, 0., sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
+        rr = jnp.where(eccentricity == 0 & ww == 0, 0., sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
 
-        aa = jnp.where(eccentricity == 0 and ww == 0, 0., jnp.cos(vv + periastron))
-        bb = jnp.where(eccentricity == 0 and ww == 0, bb, jnp.sin(vv + periastron))
+        aa = jnp.where(eccentricity == 0 & ww == 0, 0., jnp.cos(vv + periastron))
+        bb = jnp.where(eccentricity == 0 & ww == 0, bb, jnp.sin(vv + periastron))
 
-        x = jnp.where(eccentricity == 0 and ww == 0, bb * jnp.sin(inclination), rr * bb * jnp.sin(inclination))
-        y = jnp.where(eccentricity == 0 and ww == 0, sma_over_rs * jnp.sin(vv), rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
-        z = jnp.where(eccentricity == 0 and ww == 0, - bb * jnp.cos(inclination), rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
+        x = jnp.where(eccentricity == 0 & ww == 0, bb * jnp.sin(inclination), rr * bb * jnp.sin(inclination))
+        y = jnp.where(eccentricity == 0 & ww == 0, sma_over_rs * jnp.sin(vv), rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
+        z = jnp.where(eccentricity == 0 & ww == 0, - bb * jnp.cos(inclination), rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
     except NameError:
         inclination = inclination * np.pi / 180.0
         periastron = periastron * np.pi / 180.0
