@@ -153,17 +153,17 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         ii = 0
         def raise_error(n):
             raise RuntimeError(f'Failed to find a solution in {n} loops')
-        def cond(state):
-            u0, u1, ii = state
-            return (jnp.abs(u1 - u0) > 10 ** (-6)).all()
-        def body(state):
-            u0, u1, ii = state
-            u1 = u0 - (u0 - eccentricity * jnp.sin(u0) - m) / (1 - eccentricity * jnp.cos(u0))
-            u0 = u1
-            ii += 1
-            jax.lax.cond(ii < 10000, lambda _: None, lambda ii: jax.debug.callback(raise_error, ii), ii) # setting a limit of 1k iterations - arbitrary limit
-            return (u0, u1, ii)
-        u0, u1, ii = jax.lax.select(case_circular, tuple(u0, u1, ii), jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=tuple([u0, u1, ii])))
+        def f(u0, u1, ii):
+            def cond(u1):
+                return (jnp.abs(u1 - u0) > 10 ** (-6)).all()
+            def body(u1):
+                u1 = u0 - (u0 - eccentricity * jnp.sin(u0) - m) / (1 - eccentricity * jnp.cos(u0))
+                u0 = u1
+                ii += 1
+                jax.lax.cond(ii < 10000, lambda _: None, lambda ii: jax.debug.callback(raise_error, ii), ii) # setting a limit of 1k iterations - arbitrary limit
+                return u1
+            return jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=tuple([u0, u1, ii]))
+        u1 = jax.lax.select(case_circular, u1, f(u0, u1, ii))
         
         vv = jax.lax.select(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
         
