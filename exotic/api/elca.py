@@ -142,7 +142,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 
         bb = jnp.where(case_not_circular * (bb < 0), bb + 2 * jnp.pi, bb)
 
-        mid_time = float(mid_time) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
+        mid_time = mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (bb - eccentricity * jnp.sin(bb))
         m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
         u0 = m
         stop = False
