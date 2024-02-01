@@ -126,7 +126,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
         gw[np.isnan(gw)] = 0.01
     return gw, nearest.astype(int)
 
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
@@ -217,7 +217,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     return [x, y, z]
 
 #@maybe_decorate(jit(parallel=True, cache=True))
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
@@ -507,7 +507,7 @@ def gauss_numerical_integration(
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
                        num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
 
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def num_claret(r, limb_darkening_coefficients, rprs, z):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
@@ -542,7 +542,7 @@ integral_r_f = {
 }
 
 #@jax.jit
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def integral_centred(
     #method, 
     limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
@@ -591,7 +591,7 @@ def integral_plus_core(
     return parta + partb + partc + partd
 
 #@jax.jit
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def integral_minus_core(
     #method, 
     limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
