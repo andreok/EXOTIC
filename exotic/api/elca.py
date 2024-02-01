@@ -138,12 +138,12 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         case_circular = (eccentricity == 0) * (ww == 0)
         case_not_circular = (eccentricity != 0) + (ww != 0)
 
-        vv = 2 * np.pi * (time_array - mid_time) / period
+        vv = 2 * jnp.pi * (time_array - mid_time) / period
 
         aa = jax.lax.select(periastron < jnp.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
         bb = jax.lax.select(case_circular, sma_over_rs * jnp.cos(vv), 0 * time_array)
 
-        cc = jax.lax.select(case_not_circular, 2 * np.arctan(np.sqrt((1 - eccentricity) / (1 + eccentricity)) * np.tan(aa / 2)), 0 * eccentricity)
+        cc = jax.lax.select(case_not_circular, 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)), 0 * eccentricity)
         cc = jax.lax.select(case_not_circular * (cc < 0), cc + 2 * jnp.pi, cc)
 
         mid_time = jax.lax.select(case_not_circular, mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (cc - eccentricity * jnp.sin(bb)), 0 * mid_time)
