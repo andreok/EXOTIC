@@ -1633,7 +1633,7 @@ class glc_fitter(lc_fitter):
                 # make global time array and masks for each data set
                 alltime = []
                 for i in range(nobs):
-                    alltime.extend(self.data[i]['time'])
+                    alltime.extend(self.lc_data[i]['time'])
 
                 limb_darkening_coefficients = np.array([[]], dtype=np.float64).reshape(0,4)
                 rprs = np.array([], dtype=np.float64)
