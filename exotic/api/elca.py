@@ -146,9 +146,11 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         m = (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period
         u0 = m
         u1 = 0
-        def cond(u0, u1, ii):
+        def cond(state):
+            u0, u1, ii = state
             return (jnp.abs(u1 - u0) > 10 ** (-6)).all()
-        def body(u0, u1, ii):
+        def body(state):
+            u0, u1, ii = state
             u1 = u0 - (u0 - eccentricity * jnp.sin(u0) - m) / (1 - eccentricity * jnp.cos(u0))
             u0 = u1
             ii += 1
