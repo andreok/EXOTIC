@@ -155,7 +155,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
             if (ii == 10000): # setting a limit of 1k iterations - arbitrary limit
                 raise RuntimeError('Failed to find a solution in 10000 loops')
             return u1
-        u1 = jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=(u0, u1, 0))
+        u1 = jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=[u0, u1, 0])
         
         vv = jnp.where(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
         
