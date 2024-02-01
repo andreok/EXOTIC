@@ -1710,7 +1710,7 @@ class glc_fitter(lc_fitter):
                     np.put(ferr_array, ind, self.lc_data[i]['ferr'])
                     ferr = np.append(ferr, [ferr_array], axis=0)
 
-                print(nobs.shape)
+                print(nobs)
                 print(limb_darkening_coefficients.shape)
                 print(rprs.shape)
                 print(per.shape)
