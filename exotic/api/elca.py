@@ -1630,7 +1630,12 @@ class glc_fitter(lc_fitter):
             #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))))
             #print(jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs))).item())
             try:
-                limb_darkening_coefficients = np.array([], dtype=np.float64).reshape(0,4)
+                # make global time array and masks for each data set
+                alltime = []
+                for i in range(nobs):
+                    alltime.extend(self.data[i]['time'])
+
+                limb_darkening_coefficients = np.array([[]], dtype=np.float64).reshape(0,4)
                 rprs = np.array([], dtype=np.float64)
                 per = np.array([], dtype=np.float64)
                 ars = np.array([], dtype=np.float64)
@@ -1638,11 +1643,12 @@ class glc_fitter(lc_fitter):
                 inc = np.array([], dtype=np.float64)
                 omega = np.array([], dtype=np.float64)
                 tmid = np.array([], dtype=np.float64)
-                times = np.array([], dtype=np.float64)
                 a2 = np.array([], dtype=np.float64)
                 airmass = np.array([], dtype=np.float64)
-                flux = np.array([], dtype=np.float64)
-                ferr = np.array([], dtype=np.float64)
+
+                times = np.array([alltime], dtype=np.float64)
+                flux = np.array([[]], dtype=np.float64).reshape(0,len(times))
+                ferr = np.array([[]], dtype=np.float64).reshape(0,len(times))
 
                 # for each light curve
                 for i in range(nobs):
@@ -1676,37 +1682,48 @@ class glc_fitter(lc_fitter):
                             self.lc_data[i]['priors'][key] = pars[j+ti+len(gfreekeys)]
 
                     limb_darkening_coefficients = np.append(limb_darkening_coefficients, 
-                        np.array([self.lc_data[i]['priors']['u0'], 
+                        np.array([[self.lc_data[i]['priors']['u0'], 
                                    self.lc_data[i]['priors']['u1'], 
                                    self.lc_data[i]['priors']['u2'], 
-                                   self.lc_data[i]['priors']['u3']], dtype=np.float64))
+                                   self.lc_data[i]['priors']['u3']]], dtype=np.float64), axis=0)
                     rprs = np.append(rprs, self.lc_data[i]['priors']['rprs'])
-                    per = np.append(rprs, self.lc_data[i]['priors']['per'])
-                    ars = np.append(rprs, self.lc_data[i]['priors']['ars'])
-                    ecc = np.append(rprs, self.lc_data[i]['priors']['ecc'])
-                    inc = np.append(rprs, self.lc_data[i]['priors']['inc'])
-                    omega = np.append(rprs, self.lc_data[i]['priors']['omega'])
-                    tmid = np.append(rprs, self.lc_data[i]['priors']['tmid'])
-                    times = np.append(rprs, self.lc_data[i]['time'])
+                    per = np.append(per, self.lc_data[i]['priors']['per'])
+                    ars = np.append(ars, self.lc_data[i]['priors']['ars'])
+                    ecc = np.append(ecc, self.lc_data[i]['priors']['ecc'])
+                    inc = np.append(inc, self.lc_data[i]['priors']['inc'])
+                    omega = np.append(omega, self.lc_data[i]['priors']['omega'])
+                    tmid = np.append(tmid, self.lc_data[i]['priors']['tmid'])
                     a2 = np.append(a2, self.lc_data[i]['priors']['a2'])
                     airmass = np.append(airmass, self.lc_data[i]['airmass'])
-                    flux = np.append(flux, self.lc_data[i]['flux'])
-                    ferr = np.append(flux, self.lc_data[i]['ferr'])
 
-                print(nobs)
-                print(limb_darkening_coefficients)
-                print(rprs)
-                print(per)
-                print(ars)
-                print(ecc)
-                print(inc)
-                print(omega)
-                print(tmid)
-                print(times)
-                print(a2)
-                print(airmass)
-                print(flux)
-                print(ferr)
+                    empty_array = np.full_like(np.array(alltime), fill_value=np.NaN, dtype=np.float64)
+                    _, ind, _ = np.intersect1d(np.array(alltime), self.lc_data[i]['time'], return_indices=True, assume_unique=True)
+                    time_array = empty_array
+                    np.put(time_array, ind, self.lc_data[i]['time'])
+                    times = np.append(times, [time_array], axis=0)
+                    #tmask = np.in1d(np.array(alltime), self.data[i]['time'])
+                    #times = np.append(time, [np.ma.array(alltime, mask=tmask)], axis=0)
+                    flux_array = empty_array
+                    np.put(flux_array, ind, self.lc_data[i]['flux'])
+                    flux = np.append(flux, [flux_array], axis=0)
+                    ferr_array = empty_array
+                    np.put(ferr_array, ind, self.lc_data[i]['ferr'])
+                    ferr = np.append(ferr, [ferr_array], axis=0)
+
+                print(nobs.shape)
+                print(limb_darkening_coefficients.shape)
+                print(rprs.shape)
+                print(per.shape)
+                print(ars.shape)
+                print(ecc.shape)
+                print(inc.shape)
+                print(omega.shape)
+                print(tmid.shape)
+                print(times.shape)
+                print(a2.shape)
+                print(airmass.shape)
+                print(flux.shape)
+                print(ferr.shape)
 
                 try:
                     #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
