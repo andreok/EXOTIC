@@ -130,8 +130,6 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
     try:
-        print(inclination)
-        print(inclination * jnp.pi / 180.0)
         inclination = inclination * jnp.pi / 180.0
         periastron = periastron * jnp.pi / 180.0
         ww = ww * jnp.pi / 180.0
@@ -766,7 +764,10 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
-    position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
+    try:
+        position_vector = jax.vmap(planet_orbit)(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
+    except NameError:
+        position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
 
     try:
         projected_distance = jnp.where(
@@ -777,7 +778,12 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
             np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
 
-    return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
+    try:
+        return jax.vmap(transit_flux_drop)(limb_darkening_coefficients, rp_over_rs, projected_distance,
+                             #method=method, 
+                             precision=np.full_like(rp_over_rs, precision))
+    except NameError:
+        return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              #method=method, 
                              precision=precision)
 
