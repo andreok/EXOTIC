@@ -758,6 +758,9 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
 
     return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
 
+lambda_planet_orbit = lambda period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array: planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
+lambda_transit_flux_drop = lambda limb_darkening_coefficients, rp_over_rs, projected_distance, precision: transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance, precision)
+
 def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
             mid_time, time_array, 
             #method='claret', 
@@ -765,7 +768,7 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
     try:
-        position_vector = jax.pmap(planet_orbit)(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
+        position_vector = lambda_planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
     except NameError:
         position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
 
@@ -779,7 +782,7 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
 
     try:
-        return jax.pmap(transit_flux_drop)(limb_darkening_coefficients, rp_over_rs, projected_distance,
+        return lambda_transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              #method=method, 
                              precision=np.full_like(rp_over_rs, precision))
     except NameError:
