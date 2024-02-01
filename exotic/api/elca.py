@@ -1646,9 +1646,9 @@ class glc_fitter(lc_fitter):
                 a2 = np.array([], dtype=np.float64)
                 airmass = np.array([], dtype=np.float64)
 
-                times = np.array([alltime], dtype=np.float64)
-                flux = np.array([[]], dtype=np.float64).reshape(0,len(times))
-                ferr = np.array([[]], dtype=np.float64).reshape(0,len(times))
+                times = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
+                flux = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
+                ferr = np.array([[]], dtype=np.float64).reshape(0,len(alltime))
 
                 # for each light curve
                 for i in range(nobs):
