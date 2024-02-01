@@ -156,7 +156,8 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
             u1 = u0 - (u0 - eccentricity * jnp.sin(u0) - m) / (1 - eccentricity * jnp.cos(u0))
             u0 = u1
             ii += 1
-            return jnp.where(ii < 10000, u1, jax.debug.callback(raise_error, 10000)) # setting a limit of 1k iterations - arbitrary limit
+            jnp.cond(ii < 10000, lambda _: None, lambda ii: jax.debug.callback(raise_error, ii)) # setting a limit of 1k iterations - arbitrary limit
+            return u1
         u1 = jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=(u0, u1, 0))
         
         vv = jnp.where(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
