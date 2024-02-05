@@ -176,6 +176,10 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         
         vv = jax.lax.select(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
         
+        print(sma_over_rs.shape)
+        print(eccentricity.shape)
+        print(vv.shape)
+        print((sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv))).shape)
         rr = jax.lax.select(case_circular, jnp.zeros_like(eccentricity), sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
 
         aa = jax.lax.select(case_circular, jnp.zeros_like(periastron), jnp.cos(vv + periastron))
