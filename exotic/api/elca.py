@@ -163,7 +163,16 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
             ii += 1
             jax.lax.cond(ii < 10000, lambda _: None, lambda ii: jax.debug.callback(raise_error, ii), ii) # setting a limit of 1k iterations - arbitrary limit
             return (u0, u1, ii)
-        u0, u1, ii = jax.lax.select(case_circular, (u0, u1, ii), jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=tuple([u0, u1, ii])))
+        #u0, u1, ii = jax.lax.select(case_circular, (u0, u1, ii), jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=tuple([u0, u1, ii])))
+        #result = jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=tuple([u0, u1, ii]))
+        #u0 = jax.lax.select(case_circular, u0, result[0])
+        #u1 = jax.lax.select(case_circular, u1, result[0])
+        #ii = jax.lax.select(case_circular, ii, result[0])
+        init_val = (u0, u1, ii)
+        u0, u1, ii = jax.lax.cond(case_circular,
+                                  lambda init_val: init_val,
+                                  lambda init_val: jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=init_val),
+                                  init_val)
         
         vv = jax.lax.select(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
         
