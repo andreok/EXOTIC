@@ -813,7 +813,7 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
 
     return 1 - (2.0 / total_flux) * (plusflux + starflux - minsflux)
 
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, eccentricity, inclination, periastron,
             mid_time, time_array, 
             #method='claret', 
