@@ -516,7 +516,7 @@ except NameError:
                np.swapaxes(np.array(gauss60, dtype=np.float64), 0, 1)]
 
 #@jax.jit
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def gauss_numerical_integration(
     #f, 
     x1, x2, precision, *f_args):
