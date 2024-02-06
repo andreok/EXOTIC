@@ -519,18 +519,26 @@ except NameError:
 @maybe_decorate(lambda x: x)
 def gauss_numerical_integration(
     #f, 
-    x1, x2, precision, *f_args):
+    x1, x2, 
+    #precision, 
+    *f_args):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/analysis/numerical_integration.py
     x1, x2 = (x2 - x1) / 2, (x2 + x1) / 2
 
     try:
-        return x1 * jnp.sum(gauss_table[precision][0][:, None] *
+        #return x1 * jnp.sum(gauss_table[precision][0][:, None] *
+        #               #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+        #               num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+        return x1 * jnp.sum(jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1)[0][:, None] *
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
-                       num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+                       num_claret(x1[None, :] * jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1)[1][:, None] + x2[None, :], *f_args), 0)
     except NameError:
-        return x1 * np.sum(gauss_table[precision][0][:, None] *
+        #return x1 * np.sum(gauss_table[precision][0][:, None] *
+        #               #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+        #               num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+        return x1 * np.sum(np.swapaxes(np.array(gauss30, dtype=np.float64), 0, 1)[0][:, None] *
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
-                       num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+                       num_claret(x1[None, :] * np.swapaxes(np.array(gauss30, dtype=np.float64), 0, 1)[1][:, None] + x2[None, :], *f_args), 0)
 
 @maybe_decorate(lambda x: x)
 def num_claret(r, limb_darkening_coefficients, rprs, z):
@@ -555,7 +563,9 @@ def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return gauss_numerical_integration(
         #num_claret, 
-        r1, r2, precision, limb_darkening_coefficients, rprs, z)
+        r1, r2, 
+        #precision, 
+        limb_darkening_coefficients, rprs, z)
 
 integral_r_f = {
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
