@@ -532,7 +532,7 @@ def gauss_numerical_integration(
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
                        num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
 
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def num_claret(r, limb_darkening_coefficients, rprs, z):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
