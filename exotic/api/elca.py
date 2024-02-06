@@ -140,14 +140,20 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 
         vv = 2 * jnp.pi * (time_array - mid_time) / period
 
-        aa = jax.lax.select(periastron < jnp.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
-        bb = jax.lax.select(case_circular, sma_over_rs * jnp.cos(vv), 0 * time_array)
+        #aa = jax.lax.select(periastron < jnp.pi / 2, 1.0 * jnp.pi / 2 - periastron, 5.0 * jnp.pi / 2 - periastron)
+        aa = jax.lax.cond(periastron < jnp.pi / 2, lambda: 1.0 * jnp.pi / 2 - periastron, lambda: 5.0 * jnp.pi / 2 - periastron)
+        #bb = jax.lax.select(case_circular, sma_over_rs * jnp.cos(vv), 0 * time_array)
+        bb = jax.lax.cond(case_circular, lambda: sma_over_rs * jnp.cos(vv), lambda: jnp.zeros_like(time_array))
 
-        cc = jax.lax.select(case_not_circular, 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)), 0 * eccentricity)
-        cc = jax.lax.select(case_not_circular * (cc < 0), cc + 2 * jnp.pi, cc)
+        #cc = jax.lax.select(case_not_circular, 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)), 0 * eccentricity)
+        cc = jax.lax.cond(case_not_circular, lambda: 2 * jnp.arctan(jnp.sqrt((1 - eccentricity) / (1 + eccentricity)) * jnp.tan(aa / 2)), lambda: jnp.zeros_like(eccentricity))
+        #cc = jax.lax.select(case_not_circular * (cc < 0), cc + 2 * jnp.pi, cc)
+        cc = jax.lax.cond(case_not_circular * (cc < 0), lambda cc: cc + 2 * jnp.pi, lambda cc: cc, cc)
 
-        mid_time = jax.lax.select(case_not_circular, mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (cc - eccentricity * jnp.sin(bb)), 0 * bb)
-        m = jax.lax.select(case_not_circular, (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period, 0 * time_array)
+        #mid_time = jax.lax.select(case_not_circular, mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (cc - eccentricity * jnp.sin(bb)), 0 * bb)
+        mid_time = jax.lax.cond(case_not_circular, lambda: mid_time.astype(jnp.float64) - (period / 2.0 / jnp.pi) * (cc - eccentricity * jnp.sin(bb)), lambda: jnp.zeros_like(bb))
+        #m = jax.lax.select(case_not_circular, (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period, 0 * time_array)
+        m = jax.lax.cond(case_not_circular, lambda: (time_array - mid_time - jnp.int_((time_array - mid_time) / period) * period) * 2.0 * jnp.pi / period, lambda: jnp.zeros_like(time_array))
         u0 = m
         u1 = 0 * m
         ii = 0
@@ -174,16 +180,23 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
                                   lambda init_val: jax.lax.while_loop(cond_fun=cond, body_fun=body, init_val=init_val),
                                   init_val)
         
-        vv = jax.lax.select(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
+        #vv = jax.lax.select(case_circular, 2 * jnp.pi * (time_array - mid_time) / period, 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
+        vv = jax.lax.cond(case_circular, lambda: 2 * jnp.pi * (time_array - mid_time) / period, lambda: 2 * jnp.arctan(jnp.sqrt((1 + eccentricity) / (1 - eccentricity)) * jnp.tan((u1) / 2)))
         
-        rr = jax.lax.select(case_circular, jnp.zeros_like(vv), sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
+        #rr = jax.lax.select(case_circular, jnp.zeros_like(vv), sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
+        rr = jax.lax.cond(case_circular, lambda: jnp.zeros_like(vv), lambda: sma_over_rs * (1 - (eccentricity ** 2)) / (jnp.ones_like(vv) + eccentricity * jnp.cos(vv)))
 
-        aa = jax.lax.select(case_circular, jnp.zeros_like(vv), jnp.cos(vv + periastron))
-        bb = jax.lax.select(case_circular, bb, jnp.sin(vv + periastron))
+        #aa = jax.lax.select(case_circular, jnp.zeros_like(vv), jnp.cos(vv + periastron))
+        aa = jax.lax.cond(case_circular, lambda: jnp.zeros_like(vv), lambda: jnp.cos(vv + periastron))
+        #bb = jax.lax.select(case_circular, bb, jnp.sin(vv + periastron))
+        bb = jax.lax.cond(case_circular, lambda: bb, lambda: jnp.sin(vv + periastron))
 
-        x = jax.lax.select(case_circular, bb * jnp.sin(inclination), rr * bb * jnp.sin(inclination))
-        y = jax.lax.select(case_circular, sma_over_rs * jnp.sin(vv), rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
-        z = jax.lax.select(case_circular, - bb * jnp.cos(inclination), rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
+        #x = jax.lax.select(case_circular, bb * jnp.sin(inclination), rr * bb * jnp.sin(inclination))
+        x = jax.lax.cond(case_circular, lambda: bb * jnp.sin(inclination), lambda: rr * bb * jnp.sin(inclination))
+        #y = jax.lax.select(case_circular, sma_over_rs * jnp.sin(vv), rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
+        y = jax.lax.cond(case_circular, lambda: sma_over_rs * jnp.sin(vv), lambda: rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
+        #z = jax.lax.select(case_circular, - bb * jnp.cos(inclination), rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
+        z = jax.lax.select(case_circular, lambda: - bb * jnp.cos(inclination), lambda: rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
     except NameError:
         inclination = inclination * np.pi / 180.0
         periastron = periastron * np.pi / 180.0
