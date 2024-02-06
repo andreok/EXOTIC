@@ -558,7 +558,7 @@ def num_claret(r, limb_darkening_coefficients, rprs, z):
             * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
 #@jax.jit
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return gauss_numerical_integration(
@@ -596,7 +596,7 @@ def integral_centred(
             - integral_r_claret(limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
 #@jax.jit
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def integral_plus_core(
     #method, 
     limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
@@ -634,7 +634,7 @@ def integral_plus_core(
     return parta + partb + partc + partd
 
 #@jax.jit
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def integral_minus_core(
     #method, 
     limb_darkening_coefficients, rprs, z, ww1, ww2, precision=3): # assuming only cupy arrays, if GPU
