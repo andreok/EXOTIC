@@ -567,7 +567,7 @@ integral_r_f = {
 }
 
 #@jax.jit
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def integral_centred(
     #method, 
     limb_darkening_coefficients, rprs, ww1, ww2): # assuming only cupy arrays, if GPU
