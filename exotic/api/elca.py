@@ -1706,6 +1706,11 @@ class glc_fitter(lc_fitter):
             np.put(airmass_array, ind, self.lc_data[i]['airmass'])
             airmass = np.append(airmass, [airmass_array], axis=0)
 
+        print(times)
+        print(flux)
+        print(ferr)
+        print(airmass)
+
         def loglike(pars): # this runs on GPU via JAX arrays, but manipulates only Cupy arrays internally
             chi2 = 0
 
