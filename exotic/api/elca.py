@@ -242,7 +242,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
     return [x, y, z]
 
 #@maybe_decorate(jit(parallel=True, cache=True))
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     a1, a2, a3, a4 = limb_darkening_coefficients
@@ -550,7 +550,7 @@ def num_claret(r, limb_darkening_coefficients, rprs, z):
             * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
 #@jax.jit
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return gauss_numerical_integration(
@@ -575,11 +575,15 @@ def integral_centred(
     method='claret'
 
     try:
-        return jnp.abs(ww2 - ww1) * (integral_r[method](limb_darkening_coefficients, rprs)
-            - integral_r[method](limb_darkening_coefficients, 0.0))
+        #return jnp.abs(ww2 - ww1) * (integral_r[method](limb_darkening_coefficients, rprs)
+        #    - integral_r[method](limb_darkening_coefficients, 0.0))
+        return jnp.abs(ww2 - ww1) * (integral_r_claret(limb_darkening_coefficients, rprs)
+            - integral_r_claret(limb_darkening_coefficients, 0.0))
     except NameError:
-        return (integral_r[method](limb_darkening_coefficients, rprs)
-            - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
+        #return (integral_r[method](limb_darkening_coefficients, rprs)
+        #    - integral_r[method](limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
+        return (integral_r_claret(limb_darkening_coefficients, rprs)
+            - integral_r_claret(limb_darkening_coefficients, 0.0)) * np.abs(ww2 - ww1)
 
 #@jax.jit
 #@maybe_decorate(lambda x: x)
@@ -609,10 +613,14 @@ def integral_plus_core(
         r1 = np.minimum(rr1, rr2)
         w2 = np.maximum(ww1, ww2)
         r2 = np.maximum(rr1, rr2)
-    parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
-    partb = integral_r[method](limb_darkening_coefficients, r1) * w2
-    partc = integral_r[method](limb_darkening_coefficients, r2) * (-w1)
-    partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
+    #parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
+    #partb = integral_r[method](limb_darkening_coefficients, r1) * w2
+    #partc = integral_r[method](limb_darkening_coefficients, r2) * (-w1)
+    #partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
+    parta = integral_r_claret(limb_darkening_coefficients, 0.0) * (w1 - w2)
+    partb = integral_r_claret(limb_darkening_coefficients, r1) * w2
+    partc = integral_r_claret(limb_darkening_coefficients, r2) * (-w1)
+    partd = integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc + partd
 
 #@jax.jit
@@ -643,10 +651,14 @@ def integral_minus_core(
         r1 = np.minimum(rr1, rr2)
         w2 = np.maximum(ww1, ww2)
         r2 = np.maximum(rr1, rr2)
-    parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
-    partb = integral_r[method](limb_darkening_coefficients, r1) * (-w1)
-    partc = integral_r[method](limb_darkening_coefficients, r2) * w2
-    partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
+    #parta = integral_r[method](limb_darkening_coefficients, 0.0) * (w1 - w2)
+    #partb = integral_r[method](limb_darkening_coefficients, r1) * (-w1)
+    #partc = integral_r[method](limb_darkening_coefficients, r2) * w2
+    #partd = integral_r_f[method](limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
+    parta = integral_r_claret(limb_darkening_coefficients, 0.0) * (w1 - w2)
+    partb = integral_r_claret(limb_darkening_coefficients, r1) * (-w1)
+    partc = integral_r_claret(limb_darkening_coefficients, r2) * w2
+    partd = integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=precision)
     return parta + partb + partc - partd
 
 #@maybe_decorate(lambda x: x)
