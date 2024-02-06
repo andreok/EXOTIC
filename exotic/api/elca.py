@@ -196,7 +196,7 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         #y = jax.lax.select(case_circular, sma_over_rs * jnp.sin(vv), rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
         y = jax.lax.cond(case_circular, lambda: sma_over_rs * jnp.sin(vv), lambda: rr * (-aa * jnp.cos(ww) + bb * jnp.sin(ww) * jnp.cos(inclination)))
         #z = jax.lax.select(case_circular, - bb * jnp.cos(inclination), rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
-        z = jax.lax.select(case_circular, lambda: - bb * jnp.cos(inclination), lambda: rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
+        z = jax.lax.cond(case_circular, lambda: - bb * jnp.cos(inclination), lambda: rr * (-aa * jnp.sin(ww) - bb * jnp.cos(ww) * jnp.cos(inclination)))
     except NameError:
         inclination = inclination * np.pi / 180.0
         periastron = periastron * np.pi / 180.0
