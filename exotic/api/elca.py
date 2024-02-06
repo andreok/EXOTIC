@@ -1669,7 +1669,10 @@ class glc_fitter(lc_fitter):
                 chi2 += jnp.sum( ((flux-model)/ferr)**2 )
             except NameError:
                 chi2 += np.sum( ((self.lc_data[i]['flux']-model)/self.lc_data[i]['ferr'])**2 )
-            print(chi2)
+            try:
+                jax.debug.print(chi2)
+            except NameError:
+                print(chi2)
                     
             return chi2
 
