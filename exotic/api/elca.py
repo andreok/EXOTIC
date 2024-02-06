@@ -126,7 +126,7 @@ def gaussian_weights(X, w=1, neighbors=50, feature_scale=1000): # assuming only 
         gw[np.isnan(gw)] = 0.01
     return gw, nearest.astype(int)
 
-#@maybe_decorate(lambda x: x)
+@maybe_decorate(lambda x: x)
 def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array, ww=0): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
@@ -1747,20 +1747,20 @@ class glc_fitter(lc_fitter):
                     tmid = np.append(tmid, self.lc_data[i]['priors']['tmid'])
                     a2 = np.append(a2, self.lc_data[i]['priors']['a2'])
 
-                print(nobs)
-                print(limb_darkening_coefficients.shape)
-                print(rprs.shape)
-                print(per.shape)
-                print(ars.shape)
-                print(ecc.shape)
-                print(inc.shape)
-                print(omega.shape)
-                print(tmid.shape)
-                print(times.shape)
-                print(a2.shape)
-                print(airmass.shape)
-                print(flux.shape)
-                print(ferr.shape)
+                #print(nobs)
+                #print(limb_darkening_coefficients.shape)
+                #print(rprs.shape)
+                #print(per.shape)
+                #print(ars.shape)
+                #print(ecc.shape)
+                #print(inc.shape)
+                #print(omega.shape)
+                #print(tmid.shape)
+                #print(times.shape)
+                #print(a2.shape)
+                #print(airmass.shape)
+                #print(flux.shape)
+                #print(ferr.shape)
 
                 #try:
                 #    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
