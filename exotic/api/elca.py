@@ -550,7 +550,7 @@ def num_claret(r, limb_darkening_coefficients, rprs, z):
             * r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
 
 #@jax.jit
-@maybe_decorate(lambda x: x)
+#@maybe_decorate(lambda x: x)
 def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
     return gauss_numerical_integration(
