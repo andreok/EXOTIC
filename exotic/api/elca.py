@@ -704,6 +704,13 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     sum_z_rprs = z_over_rs + rp_over_rs
     dif_z_rprs = rp_over_rs - z_over_rs
     sqr_dif_z_rprs = zsq - rp_over_rs ** 2
+    print()
+    print(rp_over_rs)
+    print(z_over_rs)
+    print(zsq)
+    print(sum_z_rprs)
+    print(dif_z_rprs)
+    print(sqr_dif_z_rprs)
     try:
         case0 = jnp.where((z_over_rs == 0) & (rp_over_rs <= 1))
         case1 = jnp.where((z_over_rs < rp_over_rs) & (sum_z_rprs <= 1))
