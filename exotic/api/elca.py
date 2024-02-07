@@ -778,6 +778,7 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         print()
         print(limb_darkening_coefficients)
         print(rp_over_rs)
+        print(plus_case)
         print(z_over_rs[plus_case])
         print(theta_1[plus_case])
         print(theta_2[plus_case])
