@@ -840,6 +840,10 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
             np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
 
+    print()
+    print(rp_over_rs)
+    print(projected_distance)
+    print()
     return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              #method=method, 
                              precision=precision)
