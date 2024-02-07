@@ -536,6 +536,14 @@ def gauss_numerical_integration(
         #return x1 * jnp.sum(gauss_table[precision][0][:, None] *
         #               #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
         #               num_claret(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
+        print()
+        print(jnp.array(gauss30, dtype=jnp.float64))
+        print(jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1))
+        print(jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1)[0][:, None])
+        print(x1[None, :])
+        print(jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1)[1][:, None])
+        print(x2[None, :])
+        print(num_claret(x1[None, :] * jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1)[1][:, None] + x2[None, :], *f_args))
         return x1 * jnp.sum(jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1)[0][:, None] *
                        #f(x1[None, :] * gauss_table[precision][1][:, None] + x2[None, :], *f_args), 0)
                        num_claret(x1[None, :] * jnp.swapaxes(jnp.array(gauss30, dtype=jnp.float64), 0, 1)[1][:, None] + x2[None, :], *f_args), 0)
