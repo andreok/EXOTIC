@@ -726,13 +726,13 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     # cross points
     try:
         ph = jnp.arccos(jnp.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
-        jax.debug.print(ph)
-        jax.debug.print(z_over_rs)
+        print(ph)
+        print(z_over_rs)
         theta_1 = jnp.zeros(len(z_over_rs))
-        jax.debug.print(theta_1)
+        print(theta_1)
         ph_case = jnp.concatenate((case5[0], casea[0], casec[0]))
-        jax.debug.print(ph_case)
-        jax.debug.print(ph[ph_case])
+        print(ph_case)
+        print(ph[ph_case])
         theta_1.at[ph_case].set(ph[ph_case])
         theta_2 = jnp.arcsin(jnp.minimum(rp_over_rs / z_over_rs, 1))
         theta_2.at[case1].set(jnp.pi)
