@@ -829,7 +829,17 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             precision=3): # assuming only cupy arrays, if GPU
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
 
+    print()
+    print(period)
+    print(sma_over_rs)
+    print(eccentricity)
+    print(inclination)
+    print(periastron)
+    print(mid_time)
+    print(time_array)
+
     position_vector = planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid_time, time_array)
+    print(position_vector)
 
     try:
         projected_distance = jnp.where(
@@ -840,7 +850,6 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
             position_vector[0] < 0, 1.0 + 5.0 * rp_over_rs,
             np.sqrt(position_vector[1] * position_vector[1] + position_vector[2] * position_vector[2]))
 
-    print()
     print(rp_over_rs)
     print(projected_distance)
     print()
