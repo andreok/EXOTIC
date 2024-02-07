@@ -885,7 +885,12 @@ def pytransit(limb_darkening_coefficients, rp_over_rs, period, sma_over_rs, ecce
     print(rp_over_rs)
     print(projected_distance)
     print()
-    return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
+    try:
+        return transit_flux_drop(limb_darkening_coefficients, rp_over_rs * jnp.full_like(projected_distance, 1.), projected_distance,
+                             #method=method, 
+                             precision=precision)
+    except NameError:
+        return transit_flux_drop(limb_darkening_coefficients, rp_over_rs, projected_distance,
                              #method=method, 
                              precision=precision)
 
