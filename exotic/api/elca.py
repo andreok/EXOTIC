@@ -135,10 +135,10 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
         periastron = periastron * jnp.pi / 180.0
         ww = ww * jnp.pi / 180.0
 
-        print(eccentricity)
-        print(ww)
-        case_circular = (eccentricity[0] == 0) * (ww[0] == 0)
-        case_not_circular = (eccentricity[0] != 0) + (ww[0] != 0)
+        #print(eccentricity)
+        #print(ww)
+        case_circular = (eccentricity[0] == 0) * (ww == 0)
+        case_not_circular = (eccentricity[0] != 0) + (ww != 0)
 
         vv = 2 * jnp.pi * (time_array - mid_time) / period
 
