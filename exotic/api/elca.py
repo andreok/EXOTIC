@@ -770,6 +770,13 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     try:
         #plusflux = jnp.zeros(len(z_over_rs))
         plusflux = jnp.full_like(z_over_rs, 0., dtype=jnp.float64)
+        print()
+        print(limb_darkening_coefficients)
+        print(rp_over_rs)
+        print(z_over_rs[plus_case])
+        print(theta_1[plus_case])
+        print(theta_2[plus_case])
+        print()
         plusflux.at[plus_case].set(integral_plus_core(
             #method, 
             limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
