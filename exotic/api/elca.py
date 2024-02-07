@@ -1806,10 +1806,14 @@ class glc_fitter(lc_fitter):
                 #    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
                 #    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(pars.tile(nobs))).item()
                 #    #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(jnp.tile(pars, nobs),jnp.arange(0, nobs, 1, dtype=jnp.int))).item()
-                chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(
+                #chi2 = jnp.sum(jax.vmap(compute_chi2, axis_size=nobs, axis_name='i')(
+                #        limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
+                #        times, a2, airmass, flux, ferr
+                #        )).item()
+                chi2 = compute_chi2(
                         limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
                         times, a2, airmass, flux, ferr
-                        )).item()
+                        )
                 print(chi2)
 
                 # maximization metric for nested sampling
