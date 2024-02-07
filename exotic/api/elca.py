@@ -1490,7 +1490,8 @@ class glc_fitter(lc_fitter):
     def fit_nested(self):
 
         # create bound arrays for generating samples
-        nobs = len(self.lc_data)
+        #nobs = len(self.lc_data)
+        nobs = 1
         gfreekeys = list(self.global_bounds.keys())
 
         # if isinstance(self.local_bounds, dict):
