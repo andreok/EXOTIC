@@ -705,17 +705,17 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     dif_z_rprs = rp_over_rs - z_over_rs
     sqr_dif_z_rprs = zsq - rp_over_rs ** 2
     try:
-        case0 = jnp.where((z_over_rs == 0) * (rp_over_rs <= 1), size=len(z_over_rs))
-        case1 = jnp.where((z_over_rs < rp_over_rs) * (sum_z_rprs <= 1), size=len(z_over_rs))
-        casea = jnp.where((z_over_rs < rp_over_rs) * (sum_z_rprs > 1) * (dif_z_rprs < 1), size=len(z_over_rs))
-        caseb = jnp.where((z_over_rs < rp_over_rs) * (sum_z_rprs > 1) * (dif_z_rprs > 1), size=len(z_over_rs))
-        case2 = jnp.where((z_over_rs == rp_over_rs) * (sum_z_rprs <= 1), size=len(z_over_rs))
-        casec = jnp.where((z_over_rs == rp_over_rs) * (sum_z_rprs > 1), size=len(z_over_rs))
-        case3 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs < 1), size=len(z_over_rs))
-        case4 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs == 1), size=len(z_over_rs))
-        case5 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs > 1) * (sqr_dif_z_rprs < 1), size=len(z_over_rs))
-        case6 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs > 1) * (sqr_dif_z_rprs == 1), size=len(z_over_rs))
-        case7 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs > 1) * (sqr_dif_z_rprs > 1) * (-1 < dif_z_rprs), size=len(z_over_rs))
+        case0 = jnp.where((z_over_rs == 0) * (rp_over_rs <= 1))
+        case1 = jnp.where((z_over_rs < rp_over_rs) * (sum_z_rprs <= 1))
+        casea = jnp.where((z_over_rs < rp_over_rs) * (sum_z_rprs > 1) * (dif_z_rprs < 1))
+        caseb = jnp.where((z_over_rs < rp_over_rs) * (sum_z_rprs > 1) * (dif_z_rprs > 1))
+        case2 = jnp.where((z_over_rs == rp_over_rs) * (sum_z_rprs <= 1))
+        casec = jnp.where((z_over_rs == rp_over_rs) * (sum_z_rprs > 1))
+        case3 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs < 1))
+        case4 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs == 1))
+        case5 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs > 1) * (sqr_dif_z_rprs < 1))
+        case6 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs > 1) * (sqr_dif_z_rprs == 1))
+        case7 = jnp.where((z_over_rs > rp_over_rs) * (sum_z_rprs > 1) * (sqr_dif_z_rprs > 1) * (-1 < dif_z_rprs))
         plus_case = jnp.concatenate((case1[0], case2[0], case3[0], case4[0], case5[0], casea[0], casec[0]))
         minus_case = jnp.concatenate((case3[0], case4[0], case5[0], case6[0], case7[0]))
         star_case = jnp.concatenate((case5[0], case6[0], case7[0], casea[0], casec[0]))
@@ -782,11 +782,14 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         print(z_over_rs.at[plus_case])
         print(theta_1.at[plus_case])
         print(theta_2.at[plus_case])
+        print(z_over_rs[plus_case])
+        print(theta_1[plus_case])
+        print(theta_2[plus_case])
         print()
         plusflux.at[plus_case].set(integral_plus_core(
             #method, 
-            limb_darkening_coefficients, rp_over_rs, z_over_rs.at[plus_case],
-            theta_1.at[plus_case], theta_2.at[plus_case], precision=precision))
+            limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
+            theta_1[plus_case], theta_2[plus_case], precision=precision))
         if len(case0[0]) > 0:
             plusflux.at[case0].set(integral_centred(
                 #method, 
