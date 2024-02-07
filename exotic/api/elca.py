@@ -779,14 +779,14 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
         print(limb_darkening_coefficients)
         print(rp_over_rs)
         print(plus_case)
-        print(z_over_rs[plus_case])
-        print(theta_1[plus_case])
-        print(theta_2[plus_case])
+        print(z_over_rs.at[plus_case])
+        print(theta_1.at[plus_case])
+        print(theta_2.at[plus_case])
         print()
         plusflux.at[plus_case].set(integral_plus_core(
             #method, 
-            limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
-            theta_1[plus_case], theta_2[plus_case], precision=precision))
+            limb_darkening_coefficients, rp_over_rs, z_over_rs.at[plus_case],
+            theta_1.at[plus_case], theta_2.at[plus_case], precision=precision))
         if len(case0[0]) > 0:
             plusflux.at[case0].set(integral_centred(
                 #method, 
