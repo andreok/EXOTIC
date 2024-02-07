@@ -248,6 +248,8 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 @maybe_decorate(lambda x: x)
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
+    print(limb_darkening_coefficients)
+    print(r)
     a1, a2, a3, a4 = limb_darkening_coefficients
     mu44 = 1.0 - r * r
     try:
@@ -726,15 +728,15 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     # cross points
     try:
         ph = jnp.arccos(jnp.clip((1.0 - rp_over_rs ** 2 + zsq) / (2.0 * z_over_rs), -1, 1))
-        print(ph)
-        print(z_over_rs)
+        #print(ph)
+        #print(z_over_rs)
         #theta_1 = jnp.zeros(len(z_over_rs))
         theta_1 = jnp.full_like(z_over_rs, 0., dtype=jnp.float64)
-        print(theta_1)
+        #print(theta_1)
         ph_case = jnp.concatenate((case5[0], casea[0], casec[0]))
-        print(ph_case)
-        print(theta_1.at[ph_case])
-        print(ph[ph_case])
+        #print(ph_case)
+        #print(theta_1.at[ph_case])
+        #print(ph[ph_case])
         theta_1.at[ph_case].set(ph[ph_case])
         theta_2 = jnp.arcsin(jnp.minimum(rp_over_rs / z_over_rs, 1))
         theta_2.at[case1].set(jnp.pi)
@@ -756,7 +758,8 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
 
     # flux_upper
     try:
-        plusflux = jnp.zeros(len(z_over_rs))
+        #plusflux = jnp.zeros(len(z_over_rs))
+        plusflux = jnp.full_like(z_over_rs, 0., dtype=jnp.float64)
         plusflux.at[plus_case].set(integral_plus_core(
             #method, 
             limb_darkening_coefficients, rp_over_rs, z_over_rs[plus_case],
@@ -787,7 +790,8 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
     # flux_lower
         
     try:
-        minsflux = jnp.zeros(len(z_over_rs))
+        #minsflux = jnp.zeros(len(z_over_rs))
+        minsflux = jnp.full_like(z_over_rs, 0., dtype=jnp.float64)
         minsflux.at[minus_case].set(integral_minus_core(
             #method, 
             limb_darkening_coefficients, rp_over_rs,
@@ -801,7 +805,8 @@ def transit_flux_drop(limb_darkening_coefficients, rp_over_rs, z_over_rs,
 
     # flux_star
     try:
-        starflux = jnp.zeros(len(z_over_rs))
+        #starflux = jnp.zeros(len(z_over_rs))
+        starflux = jnp.full_like(z_over_rs, 0., dtype=jnp.float64)
         starflux.at[star_case].set(integral_centred(
             #method, 
             limb_darkening_coefficients, 1, 0.0, ph[star_case]))
