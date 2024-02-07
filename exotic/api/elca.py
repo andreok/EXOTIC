@@ -248,14 +248,16 @@ def planet_orbit(period, sma_over_rs, eccentricity, inclination, periastron, mid
 @maybe_decorate(lambda x: x)
 def integral_r_claret(limb_darkening_coefficients, r):
     # please see original: https://github.com/ucl-exoplanets/pylightcurve/blob/master/pylightcurve/models/exoplanet_lc.py
-    print(limb_darkening_coefficients)
-    print(r)
-    a1, a2, a3, a4 = limb_darkening_coefficients
+    #print(limb_darkening_coefficients)
+    #print(r)
+    #a1, a2, a3, a4 = limb_darkening_coefficients
     mu44 = 1.0 - r * r
     try:
         mu24 = jnp.sqrt(mu44)
         mu14 = jnp.sqrt(mu24)
+        a1, a2, a3, a4 = limb_darkening_coefficients.T
     except NameError:
+        a1, a2, a3, a4 = limb_darkening_coefficients
         mu24 = np.sqrt(mu44)
         mu14 = np.sqrt(mu24)
     return - (2.0 * (1.0 - a1 - a2 - a3 - a4) / 4) * mu44 \
