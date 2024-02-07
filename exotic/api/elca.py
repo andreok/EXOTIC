@@ -1779,20 +1779,20 @@ class glc_fitter(lc_fitter):
                     tmid = np.append(tmid, self.lc_data[i]['priors']['tmid'])
                     a2 = np.append(a2, self.lc_data[i]['priors']['a2'])
 
-                #print(nobs)
-                #print(limb_darkening_coefficients.shape)
-                #print(rprs.shape)
-                #print(per.shape)
-                #print(ars.shape)
-                #print(ecc.shape)
-                #print(inc.shape)
-                #print(omega.shape)
-                #print(tmid.shape)
-                #print(times.shape)
-                #print(a2.shape)
-                #print(airmass.shape)
-                #print(flux.shape)
-                #print(ferr.shape)
+                print(nobs)
+                print(limb_darkening_coefficients.shape)
+                print(rprs.shape)
+                print(per.shape)
+                print(ars.shape)
+                print(ecc.shape)
+                print(inc.shape)
+                print(omega.shape)
+                print(tmid.shape)
+                print(times.shape)
+                print(a2.shape)
+                print(airmass.shape)
+                print(flux.shape)
+                print(ferr.shape)
 
                 #try:
                 #    #chi2 = jnp.sum(jax.pmap(compute_chi2, axis_size=nobs, axis_name='i')(jax.tile(pars, nobs))).item()
@@ -1810,6 +1810,7 @@ class glc_fitter(lc_fitter):
                         limb_darkening_coefficients, rprs, per, ars, ecc, inc, omega, tmid, 
                         times, a2, airmass, flux, ferr
                         )).item()
+                print(chi2)
 
                 # maximization metric for nested sampling
                 return -0.5*chi2
